@@ -1,0 +1,49 @@
+.root {
+    -fx-font-family: "Segoe UI", sans-serif;
+    -fx-background-color: #e6ddd3;
+}
+
+.top-bar {
+    -fx-background-color: #f0f0f0;
+    -fx-border-color: #cccccc;
+    -fx-border-width: 0 0 1 0;
+}
+
+.logo-text {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+.sidebar {
+    -fx-background-color: #d8d8d8;
+}
+
+.sidebar .button {
+    -fx-pref-width: 120px;
+}
+
+.section-title {
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+}
+
+.card {
+    -fx-background-color: #eeeeee;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-border-color: #cccccc;
+}
+
+.card-title {
+    -fx-font-weight: bold;
+}
+.info-box {
+    -fx-background-color: #dcdcdc;
+    -fx-background-radius: 4;
+}
+
+.project-card {
+    -fx-border-color: #999999;
+    -fx-border-width: 0 0 0 1;
+    -fx-padding: 15;
+}
