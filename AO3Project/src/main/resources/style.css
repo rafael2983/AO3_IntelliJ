@@ -1,25 +1,41 @@
 /* === GLOBAL VARIABLES & RESETS === */
 .root {
-    -fx-font-family: "Segoe UI", "Helvetica Neue", "Arial", sans-serif;
-    -fx-font-size: 14px;
+    -fx-font-family: "Inter", "Roboto", "Segoe UI", "Helvetica Neue", "Arial", sans-serif;
+    -fx-font-size: 15px;
+
     /* Light Theme Colors */
-    -app-background-color: #F5F5DC; /* Beige */
-    -app-text-color: #333333;
-    -app-accent-color: #990000;
+    -app-background-color: #F4F7F6; /* Slightly cooler, elegant off-white */
+    -app-text-color: #1A202C; /* Rich dark slate */
+    -app-accent-color: #FF416C; /* Replaced flat red with a vibrant base for gradients */
     -app-card-bg-color: #FFFFFF;
-    -app-border-color: #DDDDDD;
-    -app-shadow-color: rgba(0, 0, 0, 0.1);
+    -app-border-color: #E2E8F0;
+    -app-shadow-color: rgba(0, 0, 0, 0.08);
 
     -fx-background-color: -app-background-color;
 }
 
+/* Removes the blue focus/highlight ring from all buttons and elements when clicked */
+.button:focused, .toggle-button:focused, .hyperlink:focused, .scroll-pane:focused, .sidebar-button:focused, .menu-button:focused {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+    /* Also remove any background overrides JavaFX tries to apply when focused */
+    -fx-background-insets: 0;
+}
+
+/* Removes ALL default text selection highlighting for sidebar text */
+.sidebar-button .text {
+    -fx-highlight-fill: transparent;
+}
+
+
 /* === DARK THEME OVERRIDES === */
 .root.dark-theme {
-    -app-background-color: #121212;
-    -app-text-color: #E0E0E0;
-    -app-card-bg-color: #1E1E1E;
-    -app-border-color: #333333;
+    -app-background-color: #0F172A; /* Deep, rich night blue/gray */
+    -app-text-color: #F8FAFC; /* Crisp, bright white */
+    -app-card-bg-color: #1E293B; /* Elevated dark card */
+    -app-border-color: #334155;
     -app-shadow-color: rgba(0, 0, 0, 0.5);
+    -app-accent-color: #FF4B2B; /* Warmer striking red/orange in dark mode */
 }
 
 .root.dark-theme .label,
@@ -29,82 +45,178 @@
 
 .root.dark-theme .section-title {
     -fx-text-fill: #FFFFFF;
-    -fx-border-color: -app-accent-color;
+}
+
+
+/* === LEFT SIDEBAR WOW FACTOR === */
+.sidebar {
+    -fx-background-color: rgba(255, 255, 255, 0.85); /* Frost glass effect */
+    -fx-border-color: -app-border-color;
+    -fx-border-width: 0 1px 0 0;
+    -fx-padding: 30 0;
+    -fx-effect: dropshadow(gaussian, -app-shadow-color, 40, 0, 10, 0); /* Heavy soft floating shadow */
 }
 
 .root.dark-theme .sidebar {
-    -fx-background-color: -app-card-bg-color;
-    -fx-border-color: -app-border-color;
+    -fx-background-color: rgba(30, 41, 59, 0.85); /* Dark frost */
+    -fx-border-color: rgba(51, 65, 85, 0.5);
+}
+
+.sidebar-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: -app-text-color;
+    -fx-alignment: center-left;
+    -fx-font-size: 16px;
+    -fx-font-weight: 700;
+    -fx-padding: 18 35;
+    -fx-cursor: hand;
+    /* MAKE BORDER ALWAYS VISIBLE, BUT TRANSPARENT UNLESS HOVERED */
+    -fx-border-width: 0 0 0 5px;
+    -fx-border-color: #E2E8F0; /* Soft, visible default border */
+    /* To animate backgrounds cleanly in JavaFX, we often animate padding or borders */
+    -fx-transition: padding 0.3s ease-out, border-color 0.3s ease-out;
+}
+
+/* Ensure no text highlighting happens during standard focus inside sidebars */
+.sidebar-button:focused .text {
+     -fx-fill: transparent;
+}
+
+
+.sidebar-button:hover {
+    /* Glowing modern gradient background that fades out to the right */
+    -fx-background-color: linear-gradient(to right, #FF416C, #FF4B2B);
+    -fx-text-fill: #FFFFFF; /* Text turns white so it's readable on the solid button */
+    -fx-border-color: #FF416C; /* Highlight the border */
+    -fx-effect: dropshadow(gaussian, rgba(255, 65, 108, 0.4), 15, 0, 5, 0);
+    /* The wow factor: slide slightly */
+    -fx-padding: 18 30 18 45;
 }
 
 .root.dark-theme .sidebar-button {
-    -fx-text-fill: #BBBBBB;
+    -fx-text-fill: #94A3B8;
+    -fx-border-color: #334155; /* Soft, visible default border for dark mode */
 }
 
 .root.dark-theme .sidebar-button:hover {
-    -fx-background-color: #333333;
+    /* Change the whole button's background for Dark Mode too */
+    -fx-background-color: linear-gradient(to right, #FF4B2B, #FF416C);
     -fx-text-fill: #FFFFFF;
+    -fx-border-color: #FF4B2B; /* Highlight the border */
+    -fx-effect: dropshadow(gaussian, rgba(255, 75, 43, 0.5), 15, 0, 5, 0);
+    -fx-padding: 18 30 18 45;
 }
 
-.root.dark-theme .filter-button {
-    -fx-background-color: #2C2C2C;
-    -fx-text-fill: -app-text-color;
-    -fx-border-color: #444444;
+
+/* Sidebar inner elements if needed */
+.sidebar-button .graphic {
+    -fx-padding: 0 10 0 0;
 }
 
-.root.dark-theme .filter-button:hover {
-    -fx-background-color: #444444;
-}
 
 /* === TOP NAVIGATION BAR === */
 .top-bar {
-    -fx-background-color: -app-accent-color;
-    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 5, 0, 0, 2);
-    -fx-padding: 10 20;
+    -fx-background-color: linear-gradient(to right, -app-card-bg-color, -app-background-color);
+    -fx-effect: dropshadow(gaussian, -app-shadow-color, 20, 0, 0, 4);
+    -fx-padding: 15 30;
     -fx-alignment: center-left;
+    -fx-border-width: 0 0 1px 0;
+    -fx-border-color: -app-border-color;
 }
 
 .logo-text {
-    -fx-font-size: 22px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #FFFFFF;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 2, 0, 1, 1);
+    -fx-font-size: 26px;
+    -fx-font-weight: 900;
+    /* Beautiful gradient text for the logo */
+    -fx-text-fill: linear-gradient(to bottom right, #FF416C, #FF4B2B);
+    -fx-effect: dropshadow(gaussian, rgba(255, 65, 108, 0.3), 10, 0, 0, 2);
 }
 
 .top-bar .hyperlink {
-    -fx-text-fill: #FFFFFF;
-    -fx-font-weight: bold;
-    -fx-font-size: 13px;
+    -fx-text-fill: -app-text-color;
+    -fx-font-weight: 700;
+    -fx-font-size: 15px;
     -fx-border-color: transparent;
-    -fx-border-width: 0 0 2px 0;
-    -fx-padding: 5 10;
+    -fx-padding: 8 16;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-underline: false;
+    -fx-transition: all 0.3s ease;
 }
 
 .top-bar .hyperlink:hover {
-    -fx-border-color: #FFFFFF;
-    -fx-background-color: rgba(255, 255, 255, 0.1);
-}
-
-.search-field {
-    -fx-background-color: #FFFFFF;
-    -fx-background-radius: 20;
-    -fx-border-radius: 20;
-    -fx-padding: 5 15;
-    -fx-prompt-text-fill: #999999;
-    -fx-text-fill: #333333;
+    -fx-background-color: linear-gradient(to bottom right, rgba(255, 65, 108, 0.1), rgba(255, 75, 43, 0.1));
+    -fx-text-fill: #FF416C;
 }
 
 /* === MENU BUTTON === */
 .menu-button {
     -fx-background-color: transparent;
-    -fx-text-fill: #FFFFFF;
-    -fx-font-size: 18px;
+    -fx-text-fill: -app-text-color;
+    -fx-font-size: 22px;
     -fx-cursor: hand;
-    -fx-padding: 0 15 0 0;
+    -fx-padding: 10 20; /* Add proper padding to give it volume */
+    -fx-background-radius: 8px; /* Smooth corners for the wow factor */
+    -fx-transition: all 0.2s ease;
+
+    /* Give the button an explicit colored border that is ALWAYS a beautiful glowing gradient */
+    -fx-border-color: linear-gradient(to right, #FF416C, #FF4B2B);
+    -fx-border-width: 2px;
+    -fx-border-style: solid;
+    -fx-border-radius: 8px;
 }
 
+.root.dark-theme .menu-button {
+    /* Same gradient in dark mode */
+    -fx-border-color: linear-gradient(to right, #FF4B2B, #FF416C);
+}
+
+
 .menu-button:hover {
-    -fx-text-fill: #DDDDDD;
+    /* Glowing gradient on the whole button box */
+    -fx-background-color: linear-gradient(to right, #FF416C, #FF4B2B);
+    -fx-text-fill: #FFFFFF; /* Pure white icon */
+    -fx-effect: dropshadow(gaussian, rgba(255, 65, 108, 0.4), 10, 0, 2, 2);
+    -fx-translate-y: -2px; /* Popping lift */
+
+    /* Ensure the border stays the exact same gradient so it blends into the background */
+    -fx-border-color: linear-gradient(to right, #FF416C, #FF4B2B);
+}
+
+.root.dark-theme .menu-button:hover {
+    -fx-background-color: linear-gradient(to right, #FF4B2B, #FF416C);
+    -fx-effect: dropshadow(gaussian, rgba(255, 75, 43, 0.5), 10, 0, 2, 2);
+    -fx-border-color: linear-gradient(to right, #FF4B2B, #FF416C);
+}
+
+.menu-button:pressed, .menu-button:focused {
+    /* Restore the transparent background but KEEP the glowing border */
+    -fx-background-color: transparent;
+    -fx-border-color: linear-gradient(to right, #FF416C, #FF4B2B);
+}
+
+.root.dark-theme .menu-button:pressed, .root.dark-theme .menu-button:focused {
+    -fx-background-color: transparent;
+    -fx-border-color: linear-gradient(to right, #FF4B2B, #FF416C);
+}
+
+
+/* === SEARCH FIELD === */
+.search-field {
+    -fx-background-color: -app-background-color;
+    -fx-background-radius: 20px;
+    -fx-border-radius: 20px;
+    -fx-border-color: transparent;
+    -fx-padding: 10 20;
+    -fx-prompt-text-fill: #94A3B8;
+    -fx-text-fill: -app-text-color;
+    -fx-effect: innershadow(gaussian, rgba(0,0,0,0.05), 5, 0, 0, 2);
+}
+.search-field:focused {
+    -fx-background-color: -app-card-bg-color;
+    -fx-border-color: linear-gradient(to right, #FF416C, #FF4B2B);
+    -fx-border-width: 2px;
+    -fx-effect: dropshadow(gaussian, rgba(255, 65, 108, 0.25), 10, 0, 0, 0);
 }
 
 /* === TOGGLE BUTTON === */
@@ -115,121 +227,133 @@
 }
 
 .toggle-container {
-    -fx-background-color: rgba(0,0,0,0.2);
-    -fx-background-radius: 20;
-    -fx-border-radius: 20;
-    -fx-border-color: rgba(255,255,255,0.3);
-    -fx-border-width: 1px;
-    -fx-min-width: 44px;
-    -fx-min-height: 24px;
-    -fx-max-width: 44px;
-    -fx-max-height: 24px;
+    -fx-background-color: #E2E8F0;
+    -fx-background-radius: 30;
+    -fx-border-radius: 30;
+    -fx-border-color: transparent;
+    -fx-min-width: 54px;
+    -fx-min-height: 28px;
+    -fx-max-width: 54px;
+    -fx-max-height: 28px;
+    -fx-effect: innershadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 1);
 }
 
 .toggle-knob {
     -fx-fill: #FFFFFF;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 2, 0, 0, 1);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 5, 0, 0, 2);
 }
 
 .toggle-on {
-    -fx-background-color: #4CAF50;
-    -fx-border-color: #4CAF50;
+    /* Glowing gradient for the toggle when ON */
+    -fx-background-color: linear-gradient(to right, #FF416C, #FF4B2B);
 }
 
-/* === LEFT SIDEBAR === */
-.sidebar {
-    -fx-background-color: -app-card-bg-color;
-    -fx-border-color: -app-border-color;
-    -fx-border-width: 0 1px 0 0;
-    -fx-padding: 20 0;
-}
-
-.sidebar-button {
-    -fx-background-color: transparent;
-    -fx-text-fill: #555555;
-    -fx-alignment: center-left;
-    -fx-font-size: 14px;
-    -fx-padding: 12 25;
-    -fx-cursor: hand;
-    -fx-border-width: 0 0 0 4px;
-    -fx-border-color: transparent;
-}
-
-.sidebar-button:hover {
-    -fx-background-color: rgba(153, 0, 0, 0.05);
-    -fx-text-fill: -app-accent-color;
-    -fx-border-color: -app-accent-color;
-}
 
 /* === MAIN CONTENT AREA === */
 .scroll-pane {
     -fx-background-color: transparent;
+    -fx-border-color: transparent;
 }
 .scroll-pane > .viewport {
     -fx-background-color: transparent;
 }
 
 .section-title {
-    -fx-font-size: 24px;
-    -fx-font-weight: bold;
-    -fx-text-fill: -app-text-color;
-    -fx-padding: 0 0 10 0;
-    -fx-border-color: -app-accent-color;
-    -fx-border-width: 0 0 2px 0;
-    -fx-margin: 0 0 15 0;
+    -fx-font-size: 30px;
+    -fx-font-weight: 900;
+    /* Gradient text fill */
+    -fx-text-fill: linear-gradient(to right, -app-text-color, #64748B);
+    -fx-padding: 0 0 15 0;
+    -fx-margin: 0 0 25 0;
 }
 
-/* === FILTERS === */
+.root.dark-theme .section-title {
+    -fx-text-fill: linear-gradient(to right, #FFFFFF, #94A3B8);
+}
+
+
+/* === BUTTONS & FILTERS === */
+.button {
+    -fx-background-color: linear-gradient(to bottom right, #FF416C, #FF4B2B);
+    -fx-text-fill: #FFFFFF;
+    -fx-border-color: transparent;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 12 25;
+    -fx-cursor: hand;
+    -fx-font-size: 15px;
+    -fx-font-weight: 800;
+    -fx-effect: dropshadow(gaussian, rgba(255, 65, 108, 0.4), 12, 0, 0, 5);
+}
+
+.button:hover {
+    -fx-background-color: linear-gradient(to bottom right, #FF4B2B, #FF416C);
+    -fx-effect: dropshadow(gaussian, rgba(255, 65, 108, 0.6), 18, 0, 0, 7);
+    -fx-translate-y: -2px; /* Popping lift */
+}
+
+/* Secondary / Filter buttons */
 .filter-button {
     -fx-background-color: -app-card-bg-color;
-    -fx-text-fill: #555555;
+    -fx-text-fill: -app-text-color;
     -fx-border-color: -app-border-color;
-    -fx-border-radius: 20;
-    -fx-background-radius: 20;
-    -fx-padding: 6 16;
+    -fx-border-width: 1px;
+    -fx-border-radius: 20px;
+    -fx-background-radius: 20px;
+    -fx-padding: 8 20;
+    -fx-font-weight: 700;
     -fx-cursor: hand;
-    -fx-font-size: 13px;
-    -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, -app-shadow-color, 5, 0, 0, 2);
 }
-
 .filter-button:hover {
-    -fx-background-color: -app-accent-color;
+    -fx-background-color: linear-gradient(to bottom right, #FF416C, #FF4B2B);
     -fx-text-fill: #FFFFFF;
-    -fx-border-color: -app-accent-color;
+    -fx-border-color: transparent;
+    -fx-effect: dropshadow(gaussian, rgba(255, 65, 108, 0.4), 10, 0, 0, 4);
+    -fx-translate-y: -1px;
 }
 
-.filter-button.active {
-    -fx-background-color: -app-accent-color;
-    -fx-text-fill: #FFFFFF;
-    -fx-border-color: -app-accent-color;
+.root.dark-theme .filter-button {
+    -fx-background-color: #334155;
+    -fx-text-fill: #F8FAFC;
+    -fx-border-color: transparent;
 }
+
+.root.dark-theme .filter-button:hover {
+    -fx-background-color: linear-gradient(to bottom right, #FF4B2B, #FF416C);
+}
+
 
 /* === CARDS & BOXES === */
 .card {
     -fx-background-color: -app-card-bg-color;
-    -fx-background-radius: 8px;
-    -fx-border-radius: 8px;
-    -fx-border-color: -app-border-color;
-    -fx-border-width: 1px;
-    -fx-effect: dropshadow(three-pass-box, -app-shadow-color, 8, 0, 0, 2);
-    -fx-padding: 15;
+    -fx-background-radius: 16px;
+    -fx-border-radius: 16px;
+    -fx-border-width: 0; /* Removing border for cleaner shadow look */
+    -fx-effect: dropshadow(gaussian, -app-shadow-color, 25, 0, 0, 8);
+    -fx-padding: 30;
 }
 
 .card:hover {
-    -fx-effect: dropshadow(three-pass-box, -app-shadow-color, 12, 0, 0, 4);
-    -fx-translate-y: -2;
+    -fx-effect: dropshadow(gaussian, -app-shadow-color, 35, 0, 0, 12);
+    -fx-translate-y: -4px; /* Noticeable float effect */
 }
 
 .card-title {
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
-    -fx-text-fill: -app-accent-color;
+    -fx-font-size: 20px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #FF416C;
+}
+.root.dark-theme .card-title {
+    -fx-text-fill: #FF4B2B;
 }
 
 .card-desc {
-    -fx-text-fill: inherit;
-    -fx-font-size: 13px;
+    -fx-text-fill: -app-text-color;
+    -fx-font-size: 15px;
     -fx-wrap-text: true;
+    -fx-line-spacing: 6px;
+    -fx-opacity: 0.85; /* Makes text feel softer */
 }
 
 .project-card {
@@ -252,76 +376,68 @@
 
 /* === FOOTER === */
 .footer {
-    -fx-background-color: #2A2A2A;
-    -fx-padding: 20;
+    -fx-background-color: transparent;
+    -fx-padding: 30;
     -fx-alignment: center;
 }
 
 .footer-text {
-    -fx-text-fill: #888888;
-    -fx-font-size: 12px;
-}
-.card {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #dddddd;
-    -fx-border-radius: 5;
-    -fx-padding: 15;
-}
-
-.card:hover {
-    -fx-border-color: #990000; /* AO3 Red border on hover */
-    -fx-background-color: #fcfcfc;
+    -fx-text-fill: #94A3B8;
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
 }
 
 /* === GENRE OVERRIDES (Active ONLY when dark-theme is present) === */
 
 .root.dark-theme.genre-horror {
-    -app-background-color: #0a0a0a !important;
-    -app-text-color: #cccccc !important;
-    -app-accent-color: #b30000 !important;
-    -fx-background-color: -app-background-color !important;
+    -app-background-color: #050505 !important;
+    -app-card-bg-color: #121212 !important;
+    -app-text-color: #D4D4D4 !important;
+    -app-accent-color: #E53E3E !important;
+    -fx-background-color: linear-gradient(to bottom, #000000, #1a0505) !important;
 }
 
 .root.dark-theme.genre-romance {
-    -app-background-color: #2e1a1a !important;
-    -app-text-color: #f8bbd0 !important;
-    -app-accent-color: #ff69b4 !important;
-    -fx-background-color: -app-background-color !important;
+    -app-background-color: #1A0F14 !important;
+    -app-card-bg-color: #2D1B24 !important;
+    -app-text-color: #FBB6CE !important;
+    -app-accent-color: #ED64A6 !important;
+    -fx-background-color: linear-gradient(to bottom right, #200f16, #3b1c2b) !important;
 }
 
 .root.dark-theme.genre-fantasy {
-    -app-background-color: #0a0a0a !important;
-    -app-text-color: #fcf4dc !important;
-    -app-accent-color: #d4af37 !important;
-    -fx-background-color: -app-background-color !important;
+    -app-background-color: #0F141A !important;
+    -app-card-bg-color: #1A222C !important;
+    -app-text-color: #FDF2F8 !important;
+    -app-accent-color: #D6BCFA !important;
+    -fx-background-color: linear-gradient(to bottom, #090e14, #1a2233) !important;
 }
 
 .root.dark-theme.genre-scifi {
-    -app-background-color: #000b1a !important;
-    -app-text-color: #e0f7fa !important;
-    -app-accent-color: #00e5ff !important;
-    -fx-background-color: -app-background-color !important;
+    -app-background-color: #0A1428 !important;
+    -app-card-bg-color: #112240 !important;
+    -app-text-color: #E6FFFA !important;
+    -app-accent-color: #38B2AC !important;
+    -fx-background-color: linear-gradient(to top right, #020c1b, #0a192f) !important;
 }
 
-/* Brighter, more optimistic comedy theme */
 .root.dark-theme.genre-comedy {
-    -app-background-color: #fffde7 !important; /* Very pale, sunny yellow */
-    -app-text-color: #3e2723 !important;        /* Deep, readable dark brown */
-    -app-accent-color: #fbc02d !important;      /* Vibrant golden yellow accent */
-    -fx-background-color: -app-background-color !important;
-    -fx-text-fill: -app-text-color;
+    -app-background-color: #2D3748 !important;
+    -app-card-bg-color: #4A5568 !important;
+    -app-text-color: #FEFCBF !important;
+    -app-accent-color: #F6E05E !important;
+    -fx-background-color: linear-gradient(to bottom, #2d3748, #232b38) !important;
 }
 .genre-comedy .section-title {
-    -fx-text-fill: #3e2723 !important; /* Deep brown for high contrast against cream */
-    -fx-font-weight: bold;
+    -fx-text-fill: #FEFCBF !important;
 }
 
 .root.dark-theme.genre-action {
-    -app-background-color: #1a1a1a !important;
-    -app-text-color: #ffffff !important;
-    -app-accent-color: #ff0000 !important;
-    -fx-background-color: -app-background-color !important;
-
+    -app-background-color: #171923 !important;
+    -app-card-bg-color: #2D3748 !important;
+    -app-text-color: #F7FAFC !important;
+    -app-accent-color: #F56565 !important;
+    -fx-background-color: linear-gradient(to bottom right, #171923, #2d3748) !important;
 }
 
 /* Force all text in the Reader to update colors based on the theme */

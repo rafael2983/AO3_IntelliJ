@@ -5,6 +5,8 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -19,7 +21,7 @@ public class ReaderView {
     private Story currentStory;
     private Pane effectsLayer;
 
-    public StackPane getView(Story story, BorderPane root) {
+    public ScrollPane getView(Story story, BorderPane root) {
         this.currentStory = story;
         applyGenreTheme(root, story.getGenre());
 
@@ -35,25 +37,35 @@ public class ReaderView {
 
         VBox readerContainer = new VBox(20);
         readerContainer.setUserData(this);
-        readerContainer.setPadding(new Insets(30));
+        readerContainer.setPadding(new Insets(40));
         readerContainer.setAlignment(Pos.TOP_CENTER);
+        
+        // Wrap text in a card for better readability like a page
+        VBox textCard = new VBox(20);
+        textCard.getStyleClass().add("card");
+        textCard.setMaxWidth(850);
+        textCard.setAlignment(Pos.TOP_CENTER);
 
         Label title = new Label(story.getTitle());
         title.getStyleClass().add("section-title");
 
         textLabel.setText(pages.get(0));
         textLabel.setWrapText(true);
-        textLabel.setMaxWidth(800);
-        textLabel.setStyle("-fx-font-size: 16px; -fx-line-spacing: 5; -fx-text-alignment: justify;");
+        textLabel.setStyle("-fx-font-size: 16px; -fx-line-spacing: 6; -fx-text-alignment: justify; -fx-text-fill: -app-text-color;");
         textLabel.getStyleClass().add("reader-text-label");
 
         HBox navControls = new HBox(20);
         navControls.setAlignment(Pos.CENTER);
+        navControls.setPadding(new Insets(20, 0, 0, 0));
 
         Button prevBtn = new Button("Previous");
+        prevBtn.getStyleClass().add("filter-button");
         Button nextBtn = new Button("Next");
+        nextBtn.getStyleClass().add("filter-button");
         Button backBtn = new Button("Back to Home");
+        backBtn.getStyleClass().add("button");
         Label pageIndicator = new Label("Page 1 of " + pages.size());
+        pageIndicator.setStyle("-fx-font-weight: 600; -fx-text-fill: -app-text-color;");
 
         backBtn.setOnAction(e -> {
             root.getStyleClass().removeIf(style -> style.startsWith("genre-"));
@@ -63,16 +75,47 @@ public class ReaderView {
         prevBtn.setOnAction(e -> changePage(-1, pageIndicator));
         nextBtn.setOnAction(e -> changePage(1, pageIndicator));
 
-        navControls.getChildren().addAll(prevBtn, pageIndicator, nextBtn, backBtn);
-        readerContainer.getChildren().addAll(title, textLabel, navControls);
+        navControls.getChildren().addAll(prevBtn, pageIndicator, nextBtn);
+        
+        textCard.getChildren().addAll(title, textLabel, navControls);
+        readerContainer.getChildren().addAll(textCard, backBtn);
 
         rootStack.getChildren().addAll(effectsLayer, readerContainer);
-        return rootStack;
+        
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setContent(rootStack);
+        scrollPane.setFitToWidth(true);
+        scrollPane.getStyleClass().add("edge-to-edge");
+        
+        // Custom smooth scroll logic
+        scrollPane.addEventFilter(ScrollEvent.SCROLL, event -> {
+            if (event.getDeltaY() != 0) {
+                double delta = event.getDeltaY();
+                double height = scrollPane.getContent().getBoundsInLocal().getHeight();
+                double viewportHeight = scrollPane.getViewportBounds().getHeight();
+                
+                if (height > viewportHeight) {
+                    double scrollRange = height - viewportHeight;
+                    // Cap the maximum delta to prevent huge jumps from fast trackpad flings
+                    double clampedDelta = Math.max(-40, Math.min(40, delta));
+                    // Reduce the multiplier for a smoother feel
+                    double scrollOffset = -clampedDelta * 1.5; 
+
+                    double newVValue = scrollPane.getVvalue() + (scrollOffset / scrollRange);
+                    scrollPane.setVvalue(Math.max(0, Math.min(1, newVValue)));
+                    event.consume(); // Consume event to override default behavior
+                }
+            }
+        });
+
+        return scrollPane;
     }
 
     private void addBackgroundEffects(Pane layer, String genre) {
         layer.getChildren().clear();
         if (!Main.isThemeCustomizationEnabled()) return;
+        // Verify we are in dark-theme
+        if (!Main.getRoot().getStyleClass().contains("dark-theme")) return;
 
         switch (genre.toLowerCase()) {
             case "horror": applyHorrorEffects(layer); System.out.println("horror"); break;
@@ -85,7 +128,7 @@ public class ReaderView {
     private void applyRomanceEffects(Pane layer) {
         for (int i = 0; i < 15; i++) {
             Label heart = new Label("❤");
-            heart.setStyle("-fx-text-fill: -app-accent-color; -fx-font-size: 20px; -fx-opacity: 0.3;");
+            heart.setStyle("-fx-text-fill: -app-accent-color; -fx-font-size: 20px; -fx-opacity: 0.2;");
             heart.setLayoutX(Math.random() * 1000);
             heart.setLayoutY(Math.random() * 800);
             layer.getChildren().add(heart);
@@ -96,9 +139,9 @@ public class ReaderView {
 
     private void applyHorrorEffects(Pane layer) {
         // --- TUNING AREA ---
-        double fogOpacity = 0.4;     // How visible the fog is (0.0 to 1.0)
+        double fogOpacity = 0.3;     // How visible the fog is (0.0 to 1.0)
         double flickerBase = 0.05;   // Base darkness of flicker
-        double flickerPulse = 0.2;  // How intense the flicker surge is
+        double flickerPulse = 0.15;  // How intense the flicker surge is
         int fogDriftSpeed1 = 20;     // Seconds for first fog layer (lower = faster)
         int fogDriftSpeed2 = 30;     // Seconds for second fog layer
         // -------------------
@@ -152,11 +195,11 @@ public class ReaderView {
 
     private void applyFantasyEffects(Pane layer) {
         for (int i = 0; i < 20; i++) {
-            Circle p = new Circle(3, Color.web("#d4af37")); // Gold glow
-            p.setOpacity(0.3); p.setLayoutX(Math.random() * 1000); p.setLayoutY(Math.random() * 800);
+            Circle p = new Circle(3, Color.web("#D6BCFA")); // Soft purple/gold
+            p.setOpacity(0.2); p.setLayoutX(Math.random() * 1000); p.setLayoutY(Math.random() * 800);
             layer.getChildren().add(p);
             FadeTransition ft = new FadeTransition(Duration.seconds(3), p);
-            ft.setFromValue(0.1); ft.setToValue(0.6); ft.setCycleCount(Animation.INDEFINITE); ft.setAutoReverse(true); ft.play();
+            ft.setFromValue(0.1); ft.setToValue(0.5); ft.setCycleCount(Animation.INDEFINITE); ft.setAutoReverse(true); ft.play();
         }
     }
 
@@ -168,8 +211,8 @@ public class ReaderView {
         // 1. Horizontal Particles (Circles)
         for (int i = 0; i < 40; i++) {
             double randomRadius = 0.5 + (Math.random() * particleSize);
-            Circle dataPoint = new Circle(randomRadius, Color.web("#00e5ff"));
-            dataPoint.setOpacity(0.2);
+            Circle dataPoint = new Circle(randomRadius, Color.web("#38B2AC"));
+            dataPoint.setOpacity(0.15);
             dataPoint.setLayoutX(Math.random() * 1280);
             dataPoint.setLayoutY(Math.random() * 800);
             layer.getChildren().add(dataPoint);
@@ -183,8 +226,8 @@ public class ReaderView {
 
         // 2. Vertical Scanning Bars (Rectangles)
         for (int i = 0; i < 5; i++) {
-            Rectangle scanBar = new Rectangle(scanlineWidth, 400, Color.web("#00e5ff"));
-            scanBar.setOpacity(0.1);
+            Rectangle scanBar = new Rectangle(scanlineWidth, 400, Color.web("#38B2AC"));
+            scanBar.setOpacity(0.05);
             scanBar.setLayoutX(100 + (Math.random() * 1000));
             scanBar.setLayoutY(-400);
             layer.getChildren().add(scanBar);
@@ -220,8 +263,8 @@ public class ReaderView {
         // 1. Always clear existing nodes
         effectsLayer.getChildren().clear();
 
-        // 2. Only re-populate if enabled
-        if (Main.isThemeCustomizationEnabled()) {
+        // 2. Only re-populate if enabled AND root is in dark-theme
+        if (Main.isThemeCustomizationEnabled() && Main.getRoot().getStyleClass().contains("dark-theme")) {
             addBackgroundEffects(effectsLayer, genre);
         }
     }

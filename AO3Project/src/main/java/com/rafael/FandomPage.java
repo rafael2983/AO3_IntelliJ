@@ -3,6 +3,7 @@ package com.rafael;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,7 +49,7 @@ public class FandomPage {
                     scrollPane.setVvalue(vValue);
 
                     // Brief highlight effect
-                    target.setStyle("-fx-background-color: #fff9e6; -fx-padding: 10; -fx-background-radius: 5;");
+                    target.setStyle("-fx-background-color: rgba(229, 62, 62, 0.05); -fx-padding: 10; -fx-background-radius: 5;");
                 }
             });
 
@@ -70,6 +71,27 @@ public class FandomPage {
         scrollPane.setContent(centeredContent);
         scrollPane.setFitToWidth(true);
         scrollPane.getStyleClass().add("edge-to-edge");
+        
+        // Custom smooth scroll logic
+        scrollPane.addEventFilter(ScrollEvent.SCROLL, event -> {
+            if (event.getDeltaY() != 0) {
+                double delta = event.getDeltaY();
+                double height = scrollPane.getContent().getBoundsInLocal().getHeight();
+                double viewportHeight = scrollPane.getViewportBounds().getHeight();
+                
+                if (height > viewportHeight) {
+                    double scrollRange = height - viewportHeight;
+                    // Cap the maximum delta to prevent huge jumps from fast trackpad flings
+                    double clampedDelta = Math.max(-40, Math.min(40, delta));
+                    // Reduce the multiplier for a smoother feel
+                    double scrollOffset = -clampedDelta * 1.5; 
+
+                    double newVValue = scrollPane.getVvalue() + (scrollOffset / scrollRange);
+                    scrollPane.setVvalue(Math.max(0, Math.min(1, newVValue)));
+                    event.consume(); // Consume event to override default behavior
+                }
+            }
+        });
 
         return scrollPane;
     }
@@ -89,22 +111,22 @@ public class FandomPage {
 
         if (stories.isEmpty()) {
             Label noStories = new Label("No stories found for this fandom yet.");
-            noStories.setStyle("-fx-text-fill: gray; -fx-font-style: italic;");
+            noStories.setStyle("-fx-text-fill: -app-text-color; -fx-opacity: 0.6; -fx-font-style: italic;");
             section.getChildren().add(noStories);
         } else {
             for (Story s : stories) {
-                VBox storyCard = new VBox(5);
-                storyCard.setPadding(new Insets(15));
-                storyCard.setStyle("-fx-border-color: #D3D3D3; -fx-border-width: 0 0 1 0; -fx-background-color: white;");
+                VBox storyCard = new VBox(8);
+                storyCard.getStyleClass().add("card");
 
                 Label stitle = new Label(s.getTitle() + " by " + s.getAuthor());
-                stitle.setStyle("-fx-font-weight: bold; -fx-text-fill: #990000;");
+                stitle.getStyleClass().add("card-title");
 
                 Label sGenre = new Label("Genre: " + s.getGenre());
-                sGenre.setStyle("-fx-font-weight: bold; -fx-text-fill: #333333; -fx-font-size: 12px;");
+                sGenre.setStyle("-fx-font-weight: bold; -fx-text-fill: -app-text-color; -fx-font-size: 13px; -fx-opacity: 0.8;");
 
                 Label sSummary = new Label(s.getSummary());
                 sSummary.setWrapText(true);
+                sSummary.getStyleClass().add("card-desc");
 
                 Button readBtn = new Button("Read Story");
                 readBtn.getStyleClass().add("filter-button");
@@ -128,7 +150,11 @@ public class FandomPage {
         box.getStyleClass().add("card");
         Label titleLabel = new Label(title);
         titleLabel.getStyleClass().add("card-title");
-        box.getChildren().addAll(titleLabel, new Label(desc));
+        
+        Label descLabel = new Label(desc);
+        descLabel.getStyleClass().add("card-desc");
+        
+        box.getChildren().addAll(titleLabel, descLabel);
         return box;
     }
 }

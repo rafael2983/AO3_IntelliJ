@@ -33,19 +33,20 @@ public class AboutView {
         // Main Info Card
         VBox infoCard = new VBox(20);
         infoCard.getStyleClass().add("card");
-        infoCard.setPadding(new Insets(30));
 
         Label infoText1 = new Label(
                 "The Organization for Transformative Works (OTW) is a nonprofit organization established by fans to serve the interests of fans by providing access to and preserving the history of fanworks and fan culture in its myriad forms."
         );
         infoText1.setWrapText(true);
-        infoText1.setStyle("-fx-font-size: 16px; -fx-line-spacing: 5px;");
+        infoText1.getStyleClass().add("card-desc");
+        infoText1.setStyle("-fx-font-size: 16px; -fx-line-spacing: 6px;");
 
         Label infoText2 = new Label(
                 "We believe that fanworks are transformative and that transformative works are legitimate. The OTW represents a practice of transformative fanwork historically rooted in a primarily female culture. The OTW will preserve the record of that history as we pursue our mission while encouraging new and non-mainstream expressions of cultural identity within fandom."
         );
         infoText2.setWrapText(true);
-        infoText2.setStyle("-fx-font-size: 16px; -fx-line-spacing: 5px;");
+        infoText2.getStyleClass().add("card-desc");
+        infoText2.setStyle("-fx-font-size: 16px; -fx-line-spacing: 6px;");
 
         infoCard.getChildren().addAll(infoText1, infoText2);
 
@@ -85,7 +86,7 @@ public class AboutView {
         scroll.setFitToWidth(true);
         scroll.setPannable(true); // Enable panning for smoother feel on touch/trackpads
         
-        // Increase scroll speed for trackpads
+        // Custom smooth scroll logic
         scroll.addEventFilter(ScrollEvent.SCROLL, event -> {
             if (event.getDeltaY() != 0) {
                 double delta = event.getDeltaY();
@@ -94,8 +95,13 @@ public class AboutView {
                 
                 if (height > viewportHeight) {
                     double scrollRange = height - viewportHeight;
-                    // Multiply delta by a factor (e.g., 4.0) to increase speed
-                    double scrollOffset = -delta * 4.0; 
+                    
+                    // Cap the maximum delta to prevent huge jumps from fast trackpad flings
+                    double clampedDelta = Math.max(-40, Math.min(40, delta));
+                    
+                    // Reduce the multiplier for a smoother feel
+                    double scrollOffset = -clampedDelta * 1.5; 
+
                     double newVValue = scroll.getVvalue() + (scrollOffset / scrollRange);
                     scroll.setVvalue(Math.max(0, Math.min(1, newVValue)));
                     event.consume(); // Consume event to override default behavior

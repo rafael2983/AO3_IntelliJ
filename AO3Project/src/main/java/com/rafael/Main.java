@@ -1,6 +1,6 @@
 package com.rafael;
 
-import javafx.animation.TranslateTransition;
+import javafx.animation.*;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -14,10 +14,7 @@ import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-// For the auto-toggle based on system time
-import java.time.LocalTime;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
+import java.net.URL;
 
 public class Main extends Application {
 
@@ -27,7 +24,7 @@ public class Main extends Application {
     private static Main instance; // Static instance for easy access
     private boolean isSidebarVisible = false;
     private Node homeContent;
-    private static final double SIDEBAR_WIDTH = 220;
+    private static final double SIDEBAR_WIDTH = 250;
     private static ToggleButton themeToggleReference;
 
 
@@ -46,7 +43,9 @@ public class Main extends Application {
         root.setCenter(contentArea);
 
         root.setTop(createTopBar());
-        setCenterContent(homeContent);
+        // Initialize without animation for the very first load
+        centerWrapper.getChildren().setAll(homeContent);
+        
         root.setBottom(createFooter());
 
         sidebar.setTranslateX(-SIDEBAR_WIDTH);
@@ -54,24 +53,23 @@ public class Main extends Application {
 
         root.getStyleClass().add("default-theme");
 
-        setupAutoToggle(); // the system time will cause auto-toggle
-
         Scene scene = new Scene(root, 1280, 800);
-        scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+        URL cssUrl = getClass().getResource("/style.css");
+        if (cssUrl != null) {
+            scene.getStylesheets().add(cssUrl.toExternalForm());
+        }
 
-        stage.setTitle("AO3 UI Mock - Professional");
+        stage.setTitle("AO3 UI Mock - Modernized & Animated");
         stage.setScene(scene);
         stage.show();
     }
 
-    // Static getter for root, needed by ReaderView
     public static BorderPane getRoot() {
         return instance.root;
     }
 
     private HBox createTopBar() {
-        HBox topBar = new HBox(15);
-        topBar.setPadding(new Insets(10, 25, 10, 25));
+        HBox topBar = new HBox(20);
         topBar.getStyleClass().add("top-bar");
         topBar.setAlignment(Pos.CENTER_LEFT);
 
@@ -79,38 +77,49 @@ public class Main extends Application {
         menuButton.getStyleClass().add("menu-button");
         menuButton.setOnAction(e -> toggleSidebar());
 
-        // Note: Ensure your resources exist in the classpath
-        ImageView logo = new ImageView(new Image(getClass().getResourceAsStream("/logo.png")));
-        logo.setFitHeight(28);
-        logo.setPreserveRatio(true);
+        HBox logoBox = new HBox(12);
+        logoBox.setAlignment(Pos.CENTER_LEFT);
+        
+        java.io.InputStream logoStream = getClass().getResourceAsStream("/logo.png");
+        if (logoStream != null) {
+            ImageView logo = new ImageView(new Image(logoStream));
+            logo.setFitHeight(34);
+            logo.setPreserveRatio(true);
+            logoBox.getChildren().add(logo);
+        }
 
         Label title = new Label("Archive of Our Own");
         title.getStyleClass().add("logo-text");
-        title.setOnMouseClicked(e -> setCenterContent(homeContent));
+        title.setOnMouseClicked(e -> setCenterContent(new HomeView().getView()));
         title.setCursor(javafx.scene.Cursor.HAND);
+        logoBox.getChildren().add(title);
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        topBar.getChildren().addAll(menuButton, logo, title, spacer, createThemeToggle(),
+        HBox navLinks = new HBox(8);
+        navLinks.setAlignment(Pos.CENTER);
+        navLinks.getChildren().addAll(
                 createHyperlink("Home", e -> setCenterContent(new HomeView().getView())),
                 createHyperlink("Fandoms", e -> setCenterContent(new FandomPage().getView())),
                 createHyperlink("Browse", e -> setCenterContent(new BrowseView().getView())),
                 createHyperlink("Search", e -> setCenterContent(new SearchView().getView())),
                 createHyperlink("About", e -> setCenterContent(new AboutView().getView()))
         );
+
+        topBar.getChildren().addAll(menuButton, logoBox, spacer, navLinks, createThemeToggle());
         return topBar;
     }
 
     private Hyperlink createHyperlink(String text, javafx.event.EventHandler<javafx.event.ActionEvent> action) {
         Hyperlink link = new Hyperlink(text);
         link.setOnAction(action);
+        link.getStyleClass().add("hyperlink");
         return link;
     }
 
     private VBox createSidebar() {
         VBox newSidebar = new VBox(10);
-        newSidebar.setPadding(new Insets(20, 0, 20, 0));
         newSidebar.setPrefWidth(SIDEBAR_WIDTH);
         newSidebar.setMaxWidth(SIDEBAR_WIDTH);
         newSidebar.getStyleClass().add("sidebar");
@@ -148,18 +157,20 @@ public class Main extends Application {
 
         StackPane toggleContainer = new StackPane();
         toggleContainer.getStyleClass().add("toggle-container");
-        Circle knob = new Circle(10);
+        Circle knob = new Circle(12);
         knob.getStyleClass().add("toggle-knob");
         StackPane.setAlignment(knob, Pos.CENTER_LEFT);
+        StackPane.setMargin(knob, new Insets(0, 0, 0, 4));
         toggleContainer.getChildren().add(knob);
         themeToggle.setGraphic(toggleContainer);
 
         themeToggle.selectedProperty().addListener((obs, oldVal, newVal) -> {
-            TranslateTransition transition = new TranslateTransition(Duration.millis(200), knob);
+            TranslateTransition transition = new TranslateTransition(Duration.millis(300), knob);
+            transition.setInterpolator(Interpolator.SPLINE(0.25, 0.1, 0.25, 1)); // Smooth spring
 
             // UI Theme Switching
             if (newVal) {
-                transition.setToX(20);
+                transition.setToX(24);
                 root.getStyleClass().removeAll("default-theme", "dark-theme");
                 root.getStyleClass().add("dark-theme");
                 toggleContainer.getStyleClass().add("toggle-on");
@@ -175,12 +186,8 @@ public class Main extends Application {
             // LIVE UPDATE:
             if (centerWrapper != null && !centerWrapper.getChildren().isEmpty()) {
                 Node currentView = centerWrapper.getChildren().get(0);
-                // Ensure we are talking to the root container of the ReaderView
-                if (currentView instanceof StackPane && currentView.getUserData() instanceof ReaderView) {
-                    ReaderView reader = (ReaderView) currentView.getUserData();
+                if (currentView instanceof StackPane && currentView.getUserData() instanceof ReaderView reader) {
                     String genre = reader.getCurrentStoryGenre();
-
-                    // Re-apply styles based on state
                     reader.applyGenreTheme(root, genre);
                     reader.refreshEffects(genre);
                 }
@@ -192,14 +199,52 @@ public class Main extends Application {
     public static boolean isThemeCustomizationEnabled() {
         return themeToggleReference != null && themeToggleReference.isSelected();
     }
+
+    /**
+     * WOW FACTOR: Smooth crossfade and slide-up animation between page navigations.
+     */
     public static void setCenterContent(Node content) {
         if (centerWrapper != null) {
-            centerWrapper.getChildren().setAll(content);
+            content.setOpacity(0);
+            content.setTranslateY(30);
+
+            if (!centerWrapper.getChildren().isEmpty()) {
+                Node oldContent = centerWrapper.getChildren().get(0);
+                
+                FadeTransition fadeOut = new FadeTransition(Duration.millis(150), oldContent);
+                fadeOut.setToValue(0);
+                
+                TranslateTransition slideDown = new TranslateTransition(Duration.millis(150), oldContent);
+                slideDown.setByY(10);
+                
+                ParallelTransition ptOut = new ParallelTransition(fadeOut, slideDown);
+                ptOut.setOnFinished(e -> {
+                    centerWrapper.getChildren().setAll(content);
+                    playEntryAnimation(content);
+                });
+                ptOut.play();
+            } else {
+                centerWrapper.getChildren().setAll(content);
+                playEntryAnimation(content);
+            }
         }
     }
 
+    private static void playEntryAnimation(Node content) {
+        FadeTransition fadeIn = new FadeTransition(Duration.millis(400), content);
+        fadeIn.setToValue(1);
+
+        TranslateTransition slideUp = new TranslateTransition(Duration.millis(400), content);
+        slideUp.setToY(0);
+        slideUp.setInterpolator(Interpolator.SPLINE(0.25, 0.1, 0.25, 1)); // Smooth ease-out
+
+        ParallelTransition ptIn = new ParallelTransition(fadeIn, slideUp);
+        ptIn.play();
+    }
+
     private void toggleSidebar() {
-        TranslateTransition transition = new TranslateTransition(Duration.millis(300), sidebar);
+        TranslateTransition transition = new TranslateTransition(Duration.millis(350), sidebar);
+        transition.setInterpolator(Interpolator.SPLINE(0.25, 0.1, 0.25, 1)); // Smooth spring
         if (isSidebarVisible) {
             transition.setToX(-SIDEBAR_WIDTH);
             transition.setOnFinished(e -> sidebar.setVisible(false));
@@ -209,23 +254,6 @@ public class Main extends Application {
         }
         transition.play();
         isSidebarVisible = !isSidebarVisible;
-    }
-
-    private void setupAutoToggle() {
-        Timeline timer = new Timeline(new KeyFrame(Duration.minutes(1), e -> {
-            LocalTime now = LocalTime.now();
-            // Check if it's 10:00 PM (22:00) or later
-            boolean isNightTime = now.isAfter(LocalTime.of(22, 0));
-
-            // Only toggle if the current state doesn't match the time-based preference
-            // This ensures the user can manually override the toggle without it flipping back
-            if (themeToggleReference != null && themeToggleReference.isSelected() != isNightTime) {
-                themeToggleReference.setSelected(isNightTime);
-            }
-        }));
-
-        timer.setCycleCount(Timeline.INDEFINITE);
-        timer.play();
     }
 
     public static void main(String[] args) {
