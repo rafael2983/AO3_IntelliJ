@@ -17,7 +17,6 @@ import java.util.List;
 public class ReaderView {
     private int currentPage = 0;
     private List<String> pages;
-    private Label textLabel = new Label();
     private Story currentStory;
     private Pane effectsLayer;
 
@@ -25,7 +24,6 @@ public class ReaderView {
         this.currentStory = story;
         applyGenreTheme(root, story.getGenre());
 
-        pages = StoryPageService.paginate(story.getFullText());
 
         StackPane rootStack = new StackPane();
         effectsLayer = new Pane(); // Now assigned to the class field
@@ -47,38 +45,35 @@ public class ReaderView {
         textCard.setAlignment(Pos.TOP_CENTER);
 
         Label title = new Label(story.getTitle());
+        VBox textContainer = new VBox(20);
+        textContainer.setMaxWidth(750);
+        textContainer.setAlignment(Pos.TOP_LEFT);
+
+        String fullText = story.getFullText();
+
+        // Split into paragraphs
+        String[] paragraphs = fullText.split("(?<=\\.)\\s+");
+
+
+        for (String p : paragraphs) {
+            Label paragraph = new Label(p.trim());
+            paragraph.setWrapText(true);
+            paragraph.setMaxWidth(750);
+            paragraph.setStyle(
+                    "-fx-font-size: 16px;" +
+                            "-fx-line-spacing: 6;" +
+                            "-fx-text-fill: -app-text-color;" +
+                            "-fx-padding: 0 0 15 0;"
+            );
+
+            textContainer.getChildren().add(paragraph);
+        }
+
+
         title.getStyleClass().add("section-title");
 
-        textLabel.setText(pages.get(0));
-        textLabel.setWrapText(true);
-        textLabel.setStyle("-fx-font-size: 16px; -fx-line-spacing: 6; -fx-text-alignment: justify; -fx-text-fill: -app-text-color;");
-        textLabel.getStyleClass().add("reader-text-label");
-
-        HBox navControls = new HBox(20);
-        navControls.setAlignment(Pos.CENTER);
-        navControls.setPadding(new Insets(20, 0, 0, 0));
-
-        Button prevBtn = new Button("Previous");
-        prevBtn.getStyleClass().add("filter-button");
-        Button nextBtn = new Button("Next");
-        nextBtn.getStyleClass().add("filter-button");
-        Button backBtn = new Button("Back to Home");
-        backBtn.getStyleClass().add("button");
-        Label pageIndicator = new Label("Page 1 of " + pages.size());
-        pageIndicator.setStyle("-fx-font-weight: 600; -fx-text-fill: -app-text-color;");
-
-        backBtn.setOnAction(e -> {
-            root.getStyleClass().removeIf(style -> style.startsWith("genre-"));
-            Main.setCenterContent(new HomeView().getView());
-        });
-
-        prevBtn.setOnAction(e -> changePage(-1, pageIndicator));
-        nextBtn.setOnAction(e -> changePage(1, pageIndicator));
-
-        navControls.getChildren().addAll(prevBtn, pageIndicator, nextBtn);
-        
-        textCard.getChildren().addAll(title, textLabel, navControls);
-        readerContainer.getChildren().addAll(textCard, backBtn);
+        textCard.getChildren().addAll(title, textContainer);
+        readerContainer.getChildren().add(textCard);
 
         rootStack.getChildren().addAll(effectsLayer, readerContainer);
         
@@ -243,7 +238,6 @@ public class ReaderView {
         int newPage = currentPage + direction;
         if (newPage >= 0 && newPage < pages.size()) {
             currentPage = newPage;
-            textLabel.setText(pages.get(currentPage));
             indicator.setText("Page " + (currentPage + 1) + " of " + pages.size());
         }
     }
