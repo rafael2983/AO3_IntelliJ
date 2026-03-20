@@ -26,6 +26,16 @@ public class Main extends Application {
     private Node homeContent;
     private static final double SIDEBAR_WIDTH = 250;
     private static ToggleButton themeToggleReference;
+    private static boolean immersionModeEnabled = true;
+
+    public static boolean isImmersionModeEnabled() {
+        return immersionModeEnabled;
+    }
+
+    public static void setImmersionModeEnabled(boolean value) {
+        immersionModeEnabled = value;
+    }
+
 
 
     @Override
@@ -107,7 +117,15 @@ public class Main extends Application {
                 createHyperlink("About", e -> setCenterContent(new AboutView().getView()))
         );
 
-        topBar.getChildren().addAll(menuButton, logoBox, spacer, navLinks, createThemeToggle());
+        topBar.getChildren().addAll(
+                menuButton,
+                logoBox,
+                spacer,
+                navLinks,
+                createThemeToggle(),
+                createImmersionToggle()
+        );
+
         return topBar;
     }
 
@@ -151,7 +169,8 @@ public class Main extends Application {
     }
 
     private ToggleButton createThemeToggle() {
-        ToggleButton themeToggle = new ToggleButton();
+        ToggleButton themeToggle = new ToggleButton("Light Mode");
+
         themeToggleReference = themeToggle;
         themeToggle.getStyleClass().add("theme-toggle");
 
@@ -167,6 +186,7 @@ public class Main extends Application {
         themeToggle.selectedProperty().addListener((obs, oldVal, newVal) -> {
             TranslateTransition transition = new TranslateTransition(Duration.millis(300), knob);
             transition.setInterpolator(Interpolator.SPLINE(0.25, 0.1, 0.25, 1)); // Smooth spring
+            themeToggle.setText(newVal ? "Dark Mode" : "Light Mode");
 
             // UI Theme Switching
             if (newVal) {
@@ -185,15 +205,78 @@ public class Main extends Application {
 
             // LIVE UPDATE:
             if (centerWrapper != null && !centerWrapper.getChildren().isEmpty()) {
+
                 Node currentView = centerWrapper.getChildren().get(0);
-                if (currentView instanceof StackPane && currentView.getUserData() instanceof ReaderView reader) {
-                    String genre = reader.getCurrentStoryGenre();
-                    reader.applyGenreTheme(root, genre);
-                    reader.refreshEffects(genre);
+
+                if (currentView instanceof StackPane stack &&
+                        stack.getUserData() instanceof ReaderView reader) {
+
+                    if (immersionModeEnabled) {
+                        // ONLY reload when turning ON
+                        Story story = reader.getCurrentStory();
+
+                        ReaderView newReader = new ReaderView();
+                        ScrollPane newView = newReader.getView(story, root);
+
+                        setCenterContent(newView);
+
+                    } else {
+                        // JUST CLEAR when OFF
+                        reader.refreshEffects("");
+                        root.getStyleClass().removeIf(s -> s.startsWith("genre-"));
+                    }
+                }
+            }
+
+
+        });
+        return themeToggle;
+    }
+
+    private ToggleButton createImmersionToggle() {
+
+        ToggleButton immersionToggle = new ToggleButton("Immersion ON");
+
+        immersionToggle.setSelected(true);
+
+        immersionToggle.setOnAction(e -> {
+
+            boolean current = immersionToggle.isSelected();
+
+            setImmersionModeEnabled(current);
+
+            if (!current && centerWrapper != null && !centerWrapper.getChildren().isEmpty()) {
+
+                Node currentView = centerWrapper.getChildren().get(0);
+
+                if (currentView instanceof StackPane stack &&
+                        stack.getUserData() instanceof ReaderView reader) {
+
+                    reader.refreshEffects(""); // FORCE CLEAR
+                }
+            }
+
+            immersionToggle.setText(current ? "Immersion ON" : "Immersion OFF");
+
+            if (centerWrapper != null && !centerWrapper.getChildren().isEmpty()) {
+
+                Node currentView = centerWrapper.getChildren().get(0);
+
+                if (currentView instanceof StackPane stack &&
+                        stack.getUserData() instanceof ReaderView reader) {
+
+                    Story story = reader.getCurrentStory();
+
+                    ReaderView newReader = new ReaderView();
+                    ScrollPane newView = newReader.getView(story, root);
+
+                    setCenterContent(newView);
                 }
             }
         });
-        return themeToggle;
+
+
+        return immersionToggle;
     }
 
     public static boolean isThemeCustomizationEnabled() {

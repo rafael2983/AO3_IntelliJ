@@ -389,7 +389,7 @@
 
 /* === GENRE OVERRIDES (Active ONLY when dark-theme is present) === */
 
-.root.dark-theme.genre-horror {
+.root.genre-horror {
     -app-background-color: #050505 !important;
     -app-card-bg-color: #121212 !important;
     -app-text-color: #D4D4D4 !important;
@@ -397,15 +397,29 @@
     -fx-background-color: linear-gradient(to bottom, #000000, #1a0505) !important;
 }
 
-.root.dark-theme.genre-romance {
-    -app-background-color: #1A0F14 !important;
-    -app-card-bg-color: #2D1B24 !important;
-    -app-text-color: #FBB6CE !important;
-    -app-accent-color: #ED64A6 !important;
-    -fx-background-color: linear-gradient(to bottom right, #200f16, #3b1c2b) !important;
+.root.genre-romance {
+    -app-background-color: #14080d;
+    -app-card-bg-color: rgba(45, 20, 30, 0.85);
+    -app-text-color: #ffd6e0;
+    -app-accent-color: #ff6b9a;
+
+    -fx-background-color: linear-gradient(to bottom right, #14080d, #2a1020);
+}
+/* Romantic soft glow */
+.root.genre-romance .card {
+    -fx-effect: dropshadow(gaussian, rgba(255, 107, 154, 0.25), 30, 0, 0, 10);
 }
 
-.root.dark-theme.genre-fantasy {
+/* Text softness */
+.root.genre-romance .reader-text-label {
+    -fx-line-spacing: 10;
+}
+.root.genre-romance .section-title {
+    -fx-text-fill: linear-gradient(to right, #ff6b9a, #ffc2d1);
+}
+
+
+.root.genre-fantasy {
     -app-background-color: #0F141A !important;
     -app-card-bg-color: #1A222C !important;
     -app-text-color: #FDF2F8 !important;
@@ -413,7 +427,7 @@
     -fx-background-color: linear-gradient(to bottom, #090e14, #1a2233) !important;
 }
 
-.root.dark-theme.genre-scifi {
+.root.genre-scifi {
     -app-background-color: #0A1428 !important;
     -app-card-bg-color: #112240 !important;
     -app-text-color: #E6FFFA !important;
@@ -421,7 +435,7 @@
     -fx-background-color: linear-gradient(to top right, #020c1b, #0a192f) !important;
 }
 
-.root.dark-theme.genre-comedy {
+.root.genre-comedy {
     -app-background-color: #2D3748 !important;
     -app-card-bg-color: #4A5568 !important;
     -app-text-color: #FEFCBF !important;
@@ -432,7 +446,7 @@
     -fx-text-fill: #FEFCBF !important;
 }
 
-.root.dark-theme.genre-action {
+.root.genre-action {
     -app-background-color: #171923 !important;
     -app-card-bg-color: #2D3748 !important;
     -app-text-color: #F7FAFC !important;
@@ -441,7 +455,7 @@
 }
 
 /* Force all text in the Reader to update colors based on the theme */
-.root.dark-theme[class*="genre-"] .label,
-.root.dark-theme[class*="genre-"] .text {
+.root[class*="genre-"] .label,
+.root[class*="genre-"] .text {
     -fx-text-fill: -app-text-color !important;
 }
