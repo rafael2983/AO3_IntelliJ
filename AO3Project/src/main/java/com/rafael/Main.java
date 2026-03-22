@@ -21,12 +21,13 @@ public class Main extends Application {
     private BorderPane root;
     private VBox sidebar;
     private static StackPane centerWrapper;
-    private static Main instance; // Static instance for easy access
+    private static Main instance;
     private boolean isSidebarVisible = false;
     private Node homeContent;
     private static final double SIDEBAR_WIDTH = 250;
     private static ToggleButton themeToggleReference;
     private static boolean immersionModeEnabled = true;
+    private static boolean isLoggedIn = false;
 
     public static boolean isImmersionModeEnabled() {
         return immersionModeEnabled;
@@ -36,11 +37,17 @@ public class Main extends Application {
         immersionModeEnabled = value;
     }
 
+    public static boolean isLoggedIn() {
+        return isLoggedIn;
+    }
 
+    public static void setLoggedIn(boolean value) {
+        isLoggedIn = value;
+    }
 
     @Override
     public void start(Stage stage) {
-        instance = this; // Initialize singleton instance
+        instance = this;
         root = new BorderPane();
         centerWrapper = new StackPane();
         centerWrapper.setAlignment(Pos.TOP_CENTER);
@@ -53,9 +60,7 @@ public class Main extends Application {
         root.setCenter(contentArea);
 
         root.setTop(createTopBar());
-        // Initialize without animation for the very first load
         centerWrapper.getChildren().setAll(homeContent);
-        
         root.setBottom(createFooter());
 
         sidebar.setTranslateX(-SIDEBAR_WIDTH);
@@ -89,7 +94,7 @@ public class Main extends Application {
 
         HBox logoBox = new HBox(12);
         logoBox.setAlignment(Pos.CENTER_LEFT);
-        
+
         java.io.InputStream logoStream = getClass().getResourceAsStream("/logo.png");
         if (logoStream != null) {
             ImageView logo = new ImageView(new Image(logoStream));
@@ -156,6 +161,30 @@ public class Main extends Application {
         Button button = new Button(text);
         button.getStyleClass().add("sidebar-button");
         button.setMaxWidth(Double.MAX_VALUE);
+
+        switch (text) {
+            case "My Works" -> button.setOnAction(e -> {
+                hideSidebar();
+            });
+
+            case "Bookmarks" -> button.setOnAction(e -> {
+                hideSidebar();
+            });
+
+            case "History" -> button.setOnAction(e -> {
+                hideSidebar();
+            });
+
+            case "Profile" -> button.setOnAction(e -> {
+                if (Main.isLoggedIn()) {
+                    Main.setCenterContent(new ProfileView().getView());
+                } else {
+                    Main.setCenterContent(new LoginView().getView());
+                }
+                hideSidebar();
+            });
+        }
+
         return button;
     }
 
@@ -185,10 +214,9 @@ public class Main extends Application {
 
         themeToggle.selectedProperty().addListener((obs, oldVal, newVal) -> {
             TranslateTransition transition = new TranslateTransition(Duration.millis(300), knob);
-            transition.setInterpolator(Interpolator.SPLINE(0.25, 0.1, 0.25, 1)); // Smooth spring
+            transition.setInterpolator(Interpolator.SPLINE(0.25, 0.1, 0.25, 1));
             themeToggle.setText(newVal ? "Dark Mode" : "Light Mode");
 
-            // UI Theme Switching
             if (newVal) {
                 transition.setToX(24);
                 root.getStyleClass().removeAll("default-theme", "dark-theme");
@@ -203,63 +231,51 @@ public class Main extends Application {
             }
             transition.play();
 
-            // LIVE UPDATE:
             if (centerWrapper != null && !centerWrapper.getChildren().isEmpty()) {
-
                 Node currentView = centerWrapper.getChildren().get(0);
 
                 if (currentView instanceof StackPane stack &&
                         stack.getUserData() instanceof ReaderView reader) {
 
                     if (immersionModeEnabled) {
-                        // ONLY reload when turning ON
                         Story story = reader.getCurrentStory();
 
                         ReaderView newReader = new ReaderView();
                         ScrollPane newView = newReader.getView(story, root);
 
                         setCenterContent(newView);
-
                     } else {
-                        // JUST CLEAR when OFF
                         reader.refreshEffects("");
                         root.getStyleClass().removeIf(s -> s.startsWith("genre-"));
                     }
                 }
             }
-
-
         });
         return themeToggle;
     }
 
     private ToggleButton createImmersionToggle() {
-
         ToggleButton immersionToggle = new ToggleButton("Immersion ON");
-
         immersionToggle.setSelected(true);
 
         immersionToggle.setOnAction(e -> {
-
             boolean current = immersionToggle.isSelected();
 
             setImmersionModeEnabled(current);
 
             if (!current && centerWrapper != null && !centerWrapper.getChildren().isEmpty()) {
-
                 Node currentView = centerWrapper.getChildren().get(0);
 
                 if (currentView instanceof StackPane stack &&
                         stack.getUserData() instanceof ReaderView reader) {
 
-                    reader.refreshEffects(""); // FORCE CLEAR
+                    reader.refreshEffects("");
                 }
             }
 
             immersionToggle.setText(current ? "Immersion ON" : "Immersion OFF");
 
             if (centerWrapper != null && !centerWrapper.getChildren().isEmpty()) {
-
                 Node currentView = centerWrapper.getChildren().get(0);
 
                 if (currentView instanceof StackPane stack &&
@@ -275,7 +291,6 @@ public class Main extends Application {
             }
         });
 
-
         return immersionToggle;
     }
 
@@ -283,9 +298,6 @@ public class Main extends Application {
         return themeToggleReference != null && themeToggleReference.isSelected();
     }
 
-    /**
-     * WOW FACTOR: Smooth crossfade and slide-up animation between page navigations.
-     */
     public static void setCenterContent(Node content) {
         if (centerWrapper != null) {
             content.setOpacity(0);
@@ -293,13 +305,13 @@ public class Main extends Application {
 
             if (!centerWrapper.getChildren().isEmpty()) {
                 Node oldContent = centerWrapper.getChildren().get(0);
-                
+
                 FadeTransition fadeOut = new FadeTransition(Duration.millis(150), oldContent);
                 fadeOut.setToValue(0);
-                
+
                 TranslateTransition slideDown = new TranslateTransition(Duration.millis(150), oldContent);
                 slideDown.setByY(10);
-                
+
                 ParallelTransition ptOut = new ParallelTransition(fadeOut, slideDown);
                 ptOut.setOnFinished(e -> {
                     centerWrapper.getChildren().setAll(content);
@@ -319,7 +331,7 @@ public class Main extends Application {
 
         TranslateTransition slideUp = new TranslateTransition(Duration.millis(400), content);
         slideUp.setToY(0);
-        slideUp.setInterpolator(Interpolator.SPLINE(0.25, 0.1, 0.25, 1)); // Smooth ease-out
+        slideUp.setInterpolator(Interpolator.SPLINE(0.25, 0.1, 0.25, 1));
 
         ParallelTransition ptIn = new ParallelTransition(fadeIn, slideUp);
         ptIn.play();
@@ -327,7 +339,8 @@ public class Main extends Application {
 
     private void toggleSidebar() {
         TranslateTransition transition = new TranslateTransition(Duration.millis(350), sidebar);
-        transition.setInterpolator(Interpolator.SPLINE(0.25, 0.1, 0.25, 1)); // Smooth spring
+        transition.setInterpolator(Interpolator.SPLINE(0.25, 0.1, 0.25, 1));
+
         if (isSidebarVisible) {
             transition.setToX(-SIDEBAR_WIDTH);
             transition.setOnFinished(e -> sidebar.setVisible(false));
@@ -335,8 +348,23 @@ public class Main extends Application {
             sidebar.setVisible(true);
             transition.setToX(0);
         }
+
         transition.play();
         isSidebarVisible = !isSidebarVisible;
+    }
+
+    private void hideSidebar() {
+        if (!isSidebarVisible) {
+            return;
+        }
+
+        TranslateTransition transition = new TranslateTransition(Duration.millis(250), sidebar);
+        transition.setInterpolator(Interpolator.SPLINE(0.25, 0.1, 0.25, 1));
+        transition.setToX(-SIDEBAR_WIDTH);
+        transition.setOnFinished(e -> sidebar.setVisible(false));
+        transition.play();
+
+        isSidebarVisible = false;
     }
 
     public static void main(String[] args) {
