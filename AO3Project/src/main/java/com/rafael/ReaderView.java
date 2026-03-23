@@ -14,6 +14,8 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
+
+import java.util.ArrayList;
 import java.util.List;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
@@ -25,6 +27,7 @@ public class ReaderView {
     private Pane effectsLayer;
     private StackPane rootStack;
     private final IntegerProperty fontSize = new SimpleIntegerProperty(16);
+    private final List<Animation> activeAnimations = new ArrayList<>();
 
     public Story getCurrentStory() {
         return currentStory;
@@ -33,7 +36,7 @@ public class ReaderView {
     public ScrollPane getView(Story story, BorderPane root) {
         this.currentStory = story;
 
-        if (Main.isImmersionModeEnabled()) {
+        if (Main.isImmersionModeEnabled() && Main.isThemeCustomizationEnabled()) {
             applyGenreTheme(root, story.getGenre());
         } else {
             root.getStyleClass().removeIf(s -> s.startsWith("genre-"));
@@ -47,7 +50,7 @@ public class ReaderView {
         effectsLayer.prefHeightProperty().bind(rootStack.heightProperty());
         effectsLayer.setMouseTransparent(true);
 
-        if (Main.isImmersionModeEnabled()) {
+        if (Main.isImmersionModeEnabled() && Main.isThemeCustomizationEnabled()) {
             addBackgroundEffects(effectsLayer, story.getGenre());
         }
 
@@ -62,13 +65,17 @@ public class ReaderView {
 
         Button backBtn = new Button("Back");
         backBtn.getStyleClass().add("filter-button");
-        backBtn.setOnAction(e -> Main.setCenterContent(new HomeView().getView()));
+        backBtn.setOnAction(e -> {
+            cleanup();
+            Main.setCenterContent(new HomeView().getView());
+        });
 
         Button bookmarkBtn = new Button();
         bookmarkBtn.getStyleClass().add("button");
         updateBookmarkButton(bookmarkBtn, story);
         bookmarkBtn.setOnAction(e -> {
             if (!Main.isLoggedIn()) {
+                cleanup();
                 Main.setCenterContent(new LoginView().getView());
                 return;
             }
@@ -220,7 +227,7 @@ public class ReaderView {
                     }
                 }
 
-                if (isKeyWord && Main.isImmersionModeEnabled()) {
+                if (isKeyWord && Main.isImmersionModeEnabled() && Main.isThemeCustomizationEnabled()) {
 
                     t.setUnderline(true);
 
@@ -241,7 +248,7 @@ public class ReaderView {
                     });
 
                     t.setOnMouseClicked(e -> {
-                        if (!Main.isImmersionModeEnabled()) return;
+                        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
                         // SPECIFIC EFFECTS FIRST
                         if (w.contains("heartbeat") || w.contains("pulse")) {
@@ -395,7 +402,7 @@ public class ReaderView {
 
     private void addBackgroundEffects(Pane layer, String genre) {
         layer.getChildren().clear();
-        if (!Main.isImmersionModeEnabled()) return;
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         switch (genre.toLowerCase()) {
             case "horror": applyHorrorEffects(layer); System.out.println("horror"); break;
@@ -418,6 +425,7 @@ public class ReaderView {
             layer.getChildren().add(heart);
             TranslateTransition tt = new TranslateTransition(Duration.seconds(8 + Math.random() * 4), heart);
             tt.setByY(-100); tt.setCycleCount(Animation.INDEFINITE); tt.setAutoReverse(true); tt.play();
+            activeAnimations.add(tt);
         }
     }
 
@@ -442,6 +450,7 @@ public class ReaderView {
         );
         pulse.setCycleCount(Animation.INDEFINITE);
         pulse.play();
+        activeAnimations.add(pulse);
 
         Rectangle flicker = new Rectangle(1280, 800, Color.BLACK);
         flicker.setOpacity(flickerBase);
@@ -453,10 +462,11 @@ public class ReaderView {
         );
         flickerTimeline.setCycleCount(Animation.INDEFINITE);
         flickerTimeline.play();
+        activeAnimations.add(flickerTimeline);
     }
 
     private void triggerRomanceEffect() {
-        if (!Main.isImmersionModeEnabled()) return;
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         for (int i = 0; i < 12; i++) {
             Label heart = new Label("❤");
@@ -478,13 +488,17 @@ public class ReaderView {
             ft.setToValue(0);
 
             ParallelTransition pt = new ParallelTransition(tt, ft);
-            pt.setOnFinished(e -> effectsLayer.getChildren().remove(heart));
+            pt.setOnFinished(e -> {
+                effectsLayer.getChildren().remove(heart);
+                activeAnimations.remove(pt);
+            });
             pt.play();
+            activeAnimations.add(pt);
         }
     }
 
     private void triggerHeartbeatEffect() {
-        if (!Main.isImmersionModeEnabled()) return;
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         ScaleTransition scaleUp = new ScaleTransition(Duration.seconds(0.15), rootStack);
         scaleUp.setToX(1.03);
@@ -497,6 +511,8 @@ public class ReaderView {
         SequentialTransition pulse = new SequentialTransition(scaleUp, scaleDown);
         pulse.setCycleCount(2);
         pulse.play();
+        activeAnimations.add(pulse);
+        pulse.setOnFinished(e -> activeAnimations.remove(pulse));
 
         Rectangle flash = new Rectangle();
         flash.setFill(Color.web("#ff4d6d"));
@@ -513,12 +529,16 @@ public class ReaderView {
         ftOut.setToValue(0);
 
         SequentialTransition seq = new SequentialTransition(ft, ftOut);
-        seq.setOnFinished(e -> effectsLayer.getChildren().remove(flash));
+        seq.setOnFinished(e -> {
+            effectsLayer.getChildren().remove(flash);
+            activeAnimations.remove(seq);
+        });
         seq.play();
+        activeAnimations.add(seq);
     }
 
     private void triggerFadeEffect() {
-        if (!Main.isImmersionModeEnabled()) return;
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         Rectangle darkness = new Rectangle();
         darkness.setFill(Color.BLACK);
@@ -536,12 +556,16 @@ public class ReaderView {
         fadeOut.setToValue(0);
 
         SequentialTransition seq = new SequentialTransition(fadeIn, fadeOut);
-        seq.setOnFinished(e -> effectsLayer.getChildren().remove(darkness));
+        seq.setOnFinished(e -> {
+            effectsLayer.getChildren().remove(darkness);
+            activeAnimations.remove(seq);
+        });
         seq.play();
+        activeAnimations.add(seq);
     }
 
     private void triggerLightBurstEffect() {
-        if (!Main.isImmersionModeEnabled()) return;
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         double width = effectsLayer.getWidth() > 0 ? effectsLayer.getWidth() : 1200;
         double height = effectsLayer.getHeight() > 0 ? effectsLayer.getHeight() : 800;
@@ -564,13 +588,17 @@ public class ReaderView {
             fade.setToValue(0);
 
             ParallelTransition pt = new ParallelTransition(drift, fade);
-            pt.setOnFinished(e -> effectsLayer.getChildren().remove(light));
+            pt.setOnFinished(e -> {
+                effectsLayer.getChildren().remove(light);
+                activeAnimations.remove(pt);
+            });
             pt.play();
+            activeAnimations.add(pt);
         }
     }
 
     private void triggerNightEffect() {
-        if (!Main.isImmersionModeEnabled()) return;
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         Rectangle night = new Rectangle();
         night.setFill(Color.web("#0b0f1a"));
@@ -605,17 +633,25 @@ public class ReaderView {
             starFade.setToValue(0);
 
             ParallelTransition pt = new ParallelTransition(drift, starFade);
-            pt.setOnFinished(e -> effectsLayer.getChildren().remove(star));
+            pt.setOnFinished(e -> {
+                effectsLayer.getChildren().remove(star);
+                activeAnimations.remove(pt);
+            });
             pt.play();
+            activeAnimations.add(pt);
         }
 
         SequentialTransition seq = new SequentialTransition(fadeIn, fadeOut);
-        seq.setOnFinished(e -> effectsLayer.getChildren().remove(night));
+        seq.setOnFinished(e -> {
+            effectsLayer.getChildren().remove(night);
+            activeAnimations.remove(seq);
+        });
         seq.play();
+        activeAnimations.add(seq);
     }
 
     private void triggerSoftLoveEffect() {
-        if (!Main.isImmersionModeEnabled()) return;
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         Circle glow = new Circle(200);
         glow.setFill(Color.web("#ff6b9a", 0.3));
@@ -633,12 +669,16 @@ public class ReaderView {
         fade.setToValue(0);
 
         ParallelTransition pt = new ParallelTransition(scale, fade);
-        pt.setOnFinished(e -> effectsLayer.getChildren().remove(glow));
+        pt.setOnFinished(e -> {
+            effectsLayer.getChildren().remove(glow);
+            activeAnimations.remove(pt);
+        });
         pt.play();
+        activeAnimations.add(pt);
     }
 
     private void triggerShadowFigure() {
-        if (!Main.isImmersionModeEnabled()) return;
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         Rectangle shadow = new Rectangle();
         shadow.setFill(Color.BLACK);
@@ -656,23 +696,29 @@ public class ReaderView {
         fadeOut.setToValue(0);
 
         SequentialTransition seq = new SequentialTransition(fadeIn, fadeOut);
-        seq.setOnFinished(e -> effectsLayer.getChildren().remove(shadow));
+        seq.setOnFinished(e -> {
+            effectsLayer.getChildren().remove(shadow);
+            activeAnimations.remove(seq);
+        });
         seq.play();
+        activeAnimations.add(seq);
     }
 
     private void triggerWhisperEffect() {
-        if (!Main.isImmersionModeEnabled()) return;
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         FadeTransition flicker = new FadeTransition(Duration.millis(100), rootStack);
         flicker.setFromValue(1);
         flicker.setToValue(0.7);
         flicker.setCycleCount(6);
         flicker.setAutoReverse(true);
+        flicker.setOnFinished(e -> activeAnimations.remove(flicker));
         flicker.play();
+        activeAnimations.add(flicker);
     }
 
     private void triggerMirrorDistortion() {
-        if (!Main.isImmersionModeEnabled()) return;
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         ScaleTransition stretch = new ScaleTransition(Duration.seconds(0.2), rootStack);
         stretch.setToX(1.05);
@@ -681,21 +727,25 @@ public class ReaderView {
         reset.setToX(1);
 
         SequentialTransition seq = new SequentialTransition(stretch, reset);
+        seq.setOnFinished(e -> activeAnimations.remove(seq));
         seq.play();
+        activeAnimations.add(seq);
     }
 
     private void triggerFootstepEffect() {
-        if (!Main.isImmersionModeEnabled()) return;
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         TranslateTransition shake = new TranslateTransition(Duration.millis(60), rootStack);
         shake.setByX(8);
         shake.setCycleCount(4);
         shake.setAutoReverse(true);
+        shake.setOnFinished(e -> activeAnimations.remove(shake));
         shake.play();
+        activeAnimations.add(shake);
     }
 
     private void triggerWatcherEffect() {
-        if (!Main.isImmersionModeEnabled()) return;
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         Circle eye = new Circle(80, Color.BLACK);
         eye.setOpacity(0.6);
@@ -708,12 +758,16 @@ public class ReaderView {
         FadeTransition fade = new FadeTransition(Duration.seconds(1), eye);
         fade.setToValue(0);
 
-        fade.setOnFinished(e -> effectsLayer.getChildren().remove(eye));
+        fade.setOnFinished(e -> {
+            effectsLayer.getChildren().remove(eye);
+            activeAnimations.remove(fade);
+        });
         fade.play();
+        activeAnimations.add(fade);
     }
 
     private void triggerBloodFlash() {
-        if (!Main.isImmersionModeEnabled()) return;
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         Rectangle flash = new Rectangle();
         flash.setFill(Color.web("#8b0000"));
@@ -731,12 +785,16 @@ public class ReaderView {
         out.setToValue(0);
 
         SequentialTransition seq = new SequentialTransition(ft, out);
-        seq.setOnFinished(e -> effectsLayer.getChildren().remove(flash));
+        seq.setOnFinished(e -> {
+            effectsLayer.getChildren().remove(flash);
+            activeAnimations.remove(seq);
+        });
         seq.play();
+        activeAnimations.add(seq);
     }
 
     private void triggerFloatingCloudsEffect() {
-        if (!Main.isImmersionModeEnabled()) return;
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         double width = effectsLayer.getWidth() > 0 ? effectsLayer.getWidth() : 1200;
         double height = effectsLayer.getHeight() > 0 ? effectsLayer.getHeight() : 800;
@@ -759,13 +817,17 @@ public class ReaderView {
             fade.setToValue(0);
 
             ParallelTransition pt = new ParallelTransition(drift, fade);
-            pt.setOnFinished(e -> effectsLayer.getChildren().remove(cloud));
+            pt.setOnFinished(e -> {
+                effectsLayer.getChildren().remove(cloud);
+                activeAnimations.remove(pt);
+            });
             pt.play();
+            activeAnimations.add(pt);
         }
     }
 
     private void triggerEnergyPulseEffect() {
-        if (!Main.isImmersionModeEnabled()) return;
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         Rectangle pulse = new Rectangle();
         pulse.setFill(Color.web("#38B2AC"));
@@ -783,12 +845,16 @@ public class ReaderView {
         fade.setToValue(0);
 
         SequentialTransition seq = new SequentialTransition(flash, fade);
-        seq.setOnFinished(e -> effectsLayer.getChildren().remove(pulse));
+        seq.setOnFinished(e -> {
+            effectsLayer.getChildren().remove(pulse);
+            activeAnimations.remove(seq);
+        });
         seq.play();
+        activeAnimations.add(seq);
     }
 
     private void triggerDataStreamEffect() {
-        if (!Main.isImmersionModeEnabled()) return;
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         double width = effectsLayer.getWidth() > 0 ? effectsLayer.getWidth() : 1200;
 
@@ -808,13 +874,17 @@ public class ReaderView {
             fade.setToValue(0);
 
             ParallelTransition pt = new ParallelTransition(fall, fade);
-            pt.setOnFinished(e -> effectsLayer.getChildren().remove(line));
+            pt.setOnFinished(e -> {
+                effectsLayer.getChildren().remove(line);
+                activeAnimations.remove(pt);
+            });
             pt.play();
+            activeAnimations.add(pt);
         }
     }
 
     private void triggerForceWaveEffect() {
-        if (!Main.isImmersionModeEnabled()) return;
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         Circle wave = new Circle(50);
         wave.setFill(Color.web("#38B2AC", 0.3));
@@ -832,12 +902,16 @@ public class ReaderView {
         fade.setToValue(0);
 
         ParallelTransition pt = new ParallelTransition(expand, fade);
-        pt.setOnFinished(e -> effectsLayer.getChildren().remove(wave));
+        pt.setOnFinished(e -> {
+            effectsLayer.getChildren().remove(wave);
+            activeAnimations.remove(pt);
+        });
         pt.play();
+        activeAnimations.add(pt);
     }
 
     private void triggerVoidGlitchEffect() {
-        if (!Main.isImmersionModeEnabled()) return;
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         Rectangle glitch = new Rectangle();
         glitch.setFill(Color.BLACK);
@@ -854,8 +928,12 @@ public class ReaderView {
         );
 
         flicker.setCycleCount(4);
-        flicker.setOnFinished(e -> effectsLayer.getChildren().remove(glitch));
+        flicker.setOnFinished(e -> {
+            effectsLayer.getChildren().remove(glitch);
+            activeAnimations.remove(flicker);
+        });
         flicker.play();
+        activeAnimations.add(flicker);
     }
 
     private Rectangle createFogRectangle(double opacity) {
@@ -872,6 +950,7 @@ public class ReaderView {
         tt.setCycleCount(Animation.INDEFINITE);
         tt.setAutoReverse(true);
         tt.play();
+        activeAnimations.add(tt);
     }
 
     private void applyFantasyEffects(Pane layer) {
@@ -888,6 +967,7 @@ public class ReaderView {
             ft.setCycleCount(Animation.INDEFINITE);
             ft.setAutoReverse(true);
             ft.play();
+            activeAnimations.add(ft);
         }
     }
 
@@ -913,6 +993,7 @@ public class ReaderView {
             drift.setCycleCount(Animation.INDEFINITE);
             drift.setAutoReverse(true);
             drift.play();
+            activeAnimations.add(drift);
         }
 
         for (int i = 0; i < 5; i++) {
@@ -926,6 +1007,7 @@ public class ReaderView {
             fall.setByY(1200);
             fall.setCycleCount(Animation.INDEFINITE);
             fall.play();
+            activeAnimations.add(fall);
         }
     }
 
@@ -940,7 +1022,7 @@ public class ReaderView {
     public void applyGenreTheme(BorderPane root, String genre) {
         root.getStyleClass().removeIf(style -> style.startsWith("genre-"));
 
-        if (!Main.isImmersionModeEnabled()) {
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) {
             return;
         }
 
@@ -948,16 +1030,28 @@ public class ReaderView {
         root.getStyleClass().add("genre-" + cleanGenre);
     }
 
-    public void refreshEffects(String genre) {
-        effectsLayer.getChildren().clear();
+    public void cleanup() {
+        for (Animation a : activeAnimations) {
+            if (a != null) {
+                a.stop();
+            }
+        }
+        activeAnimations.clear();
+        if (effectsLayer != null) {
+            effectsLayer.getChildren().clear();
+        }
+    }
 
-        if (!Main.isImmersionModeEnabled()) return;
+    public void refreshEffects(String genre) {
+        cleanup();
+        
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         addBackgroundEffects(effectsLayer, genre);
     }
 
     private void triggerHorrorClickEffect() {
-        if (!Main.isImmersionModeEnabled()) return;
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         Rectangle dark = new Rectangle();
         dark.setFill(Color.BLACK);
@@ -975,18 +1069,24 @@ public class ReaderView {
         fadeOut.setToValue(0);
 
         SequentialTransition seq = new SequentialTransition(fadeIn, fadeOut);
-        seq.setOnFinished(e -> effectsLayer.getChildren().remove(dark));
+        seq.setOnFinished(e -> {
+            effectsLayer.getChildren().remove(dark);
+            activeAnimations.remove(seq);
+        });
         seq.play();
+        activeAnimations.add(seq);
 
         TranslateTransition shake = new TranslateTransition(Duration.millis(50), rootStack);
         shake.setByX(6);
         shake.setCycleCount(6);
         shake.setAutoReverse(true);
+        shake.setOnFinished(e -> activeAnimations.remove(shake));
         shake.play();
+        activeAnimations.add(shake);
     }
 
     private void triggerFantasyClickEffect() {
-        if (!Main.isImmersionModeEnabled()) return;
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         double width = effectsLayer.getWidth() > 0 ? effectsLayer.getWidth() : 1200;
         double height = effectsLayer.getHeight() > 0 ? effectsLayer.getHeight() : 800;
@@ -1006,13 +1106,17 @@ public class ReaderView {
             floatUp.setByY(-100);
 
             ParallelTransition pt = new ParallelTransition(fade, floatUp);
-            pt.setOnFinished(e -> effectsLayer.getChildren().remove(spark));
+            pt.setOnFinished(e -> {
+                effectsLayer.getChildren().remove(spark);
+                activeAnimations.remove(pt);
+            });
             pt.play();
+            activeAnimations.add(pt);
         }
     }
 
     private void triggerSciFiClickEffect() {
-        if (!Main.isImmersionModeEnabled()) return;
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         Rectangle flash = new Rectangle();
         flash.setFill(Color.web("#38B2AC"));
@@ -1030,12 +1134,16 @@ public class ReaderView {
         out.setToValue(0);
 
         SequentialTransition seq = new SequentialTransition(ft, out);
-        seq.setOnFinished(e -> effectsLayer.getChildren().remove(flash));
+        seq.setOnFinished(e -> {
+            effectsLayer.getChildren().remove(flash);
+            activeAnimations.remove(seq);
+        });
         seq.play();
+        activeAnimations.add(seq);
     }
 
     private void triggerActionClickEffect() {
-        if (!Main.isImmersionModeEnabled()) return;
+        if (!Main.isImmersionModeEnabled() || !Main.isThemeCustomizationEnabled()) return;
 
         Rectangle flash = new Rectangle();
         flash.setFill(Color.ORANGE);
@@ -1053,14 +1161,20 @@ public class ReaderView {
         out.setToValue(0);
 
         SequentialTransition seq = new SequentialTransition(ft, out);
-        seq.setOnFinished(e -> effectsLayer.getChildren().remove(flash));
+        seq.setOnFinished(e -> {
+            effectsLayer.getChildren().remove(flash);
+            activeAnimations.remove(seq);
+        });
         seq.play();
+        activeAnimations.add(seq);
 
         TranslateTransition shake = new TranslateTransition(Duration.millis(40), rootStack);
         shake.setByX(12);
         shake.setCycleCount(6);
         shake.setAutoReverse(true);
+        shake.setOnFinished(e -> activeAnimations.remove(shake));
         shake.play();
+        activeAnimations.add(shake);
     }
 
     public String getCurrentStoryGenre() {

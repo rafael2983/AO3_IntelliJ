@@ -142,7 +142,7 @@ public class Main extends Application {
                 spacer,
                 navLinks,
                 createThemeToggle(),
-                createImmersionToggle()
+                createImmersionButton()
         );
 
         return topBar;
@@ -247,11 +247,28 @@ public class Main extends Application {
             if (centerWrapper != null && !centerWrapper.getChildren().isEmpty()) {
                 Node currentView = centerWrapper.getChildren().get(0);
 
-                if (currentView instanceof StackPane stack &&
-                        stack.getUserData() instanceof ReaderView reader) {
-
+                // Handle cleanup logic for ReaderView
+                if (currentView instanceof ScrollPane scrollPane && 
+                    scrollPane.getContent() instanceof StackPane stack &&
+                    stack.getUserData() instanceof ReaderView reader) {
+                    
                     if (immersionModeEnabled) {
                         Story story = reader.getCurrentStory();
+                        reader.cleanup(); // Clean up old reader
+
+                        ReaderView newReader = new ReaderView();
+                        ScrollPane newView = newReader.getView(story, root);
+
+                        setCenterContent(newView);
+                    } else {
+                        reader.refreshEffects("");
+                        root.getStyleClass().removeIf(s -> s.startsWith("genre-"));
+                    }
+                } else if (currentView instanceof StackPane stack &&
+                           stack.getUserData() instanceof ReaderView reader) {
+                    if (immersionModeEnabled) {
+                        Story story = reader.getCurrentStory();
+                        reader.cleanup(); // Clean up old reader
 
                         ReaderView newReader = new ReaderView();
                         ScrollPane newView = newReader.getView(story, root);
@@ -267,36 +284,69 @@ public class Main extends Application {
         return themeToggle;
     }
 
-    private ToggleButton createImmersionToggle() {
-        ToggleButton immersionToggle = new ToggleButton("Immersion ON");
-        immersionToggle.setSelected(true);
+    private Button createImmersionButton() {
+        Button immersionButton = new Button(isImmersionModeEnabled() ? "✨ Immersion: ON" : "💤 Immersion: OFF");
 
-        immersionToggle.setOnAction(e -> {
-            boolean current = immersionToggle.isSelected();
+        String activeStyle = "-fx-background-color: linear-gradient(to right, #900000, #d32f2f); -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13px; -fx-background-radius: 20; -fx-padding: 8 16; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 5, 0, 0, 2);";
+        String inactiveStyle = "-fx-background-color: #757575; -fx-text-fill: #e0e0e0; -fx-font-weight: bold; -fx-font-size: 13px; -fx-background-radius: 20; -fx-padding: 8 16; -fx-cursor: hand;";
 
+        immersionButton.setStyle(isImmersionModeEnabled() ? activeStyle : inactiveStyle);
+
+        immersionButton.setOnMouseEntered(e -> {
+            ScaleTransition st = new ScaleTransition(Duration.millis(150), immersionButton);
+            st.setToX(1.05);
+            st.setToY(1.05);
+            st.play();
+        });
+
+        immersionButton.setOnMouseExited(e -> {
+            ScaleTransition st = new ScaleTransition(Duration.millis(150), immersionButton);
+            st.setToX(1.0);
+            st.setToY(1.0);
+            st.play();
+        });
+
+        immersionButton.setOnAction(e -> {
+            boolean current = !isImmersionModeEnabled();
             setImmersionModeEnabled(current);
+            
+            immersionButton.setText(current ? "✨ Immersion: ON" : "💤 Immersion: OFF");
+            immersionButton.setStyle(current ? activeStyle : inactiveStyle);
 
             if (!current && centerWrapper != null && !centerWrapper.getChildren().isEmpty()) {
                 Node currentView = centerWrapper.getChildren().get(0);
 
-                if (currentView instanceof StackPane stack &&
-                        stack.getUserData() instanceof ReaderView reader) {
-
+                if (currentView instanceof ScrollPane scrollPane && 
+                    scrollPane.getContent() instanceof StackPane stack &&
+                    stack.getUserData() instanceof ReaderView reader) {
+                    reader.refreshEffects("");
+                } else if (currentView instanceof StackPane stack &&
+                           stack.getUserData() instanceof ReaderView reader) {
                     reader.refreshEffects("");
                 }
             }
-
-            immersionToggle.setText(current ? "Immersion ON" : "Immersion OFF");
 
             refreshProfileIfOpen();
 
             if (centerWrapper != null && !centerWrapper.getChildren().isEmpty()) {
                 Node currentView = centerWrapper.getChildren().get(0);
 
-                if (currentView instanceof StackPane stack &&
-                        stack.getUserData() instanceof ReaderView reader) {
+                if (currentView instanceof ScrollPane scrollPane && 
+                    scrollPane.getContent() instanceof StackPane stack &&
+                    stack.getUserData() instanceof ReaderView reader) {
 
                     Story story = reader.getCurrentStory();
+                    reader.cleanup();
+
+                    ReaderView newReader = new ReaderView();
+                    ScrollPane newView = newReader.getView(story, root);
+
+                    setCenterContent(newView);
+                } else if (currentView instanceof StackPane stack &&
+                           stack.getUserData() instanceof ReaderView reader) {
+
+                    Story story = reader.getCurrentStory();
+                    reader.cleanup();
 
                     ReaderView newReader = new ReaderView();
                     ScrollPane newView = newReader.getView(story, root);
@@ -306,7 +356,7 @@ public class Main extends Application {
             }
         });
 
-        return immersionToggle;
+        return immersionButton;
     }
 
     public static boolean isThemeCustomizationEnabled() {
@@ -333,6 +383,16 @@ public class Main extends Application {
 
             if (!centerWrapper.getChildren().isEmpty()) {
                 Node oldContent = centerWrapper.getChildren().get(0);
+
+                // Ensure we cleanup any active ReaderView before switching
+                if (oldContent instanceof ScrollPane scrollPane && 
+                    scrollPane.getContent() instanceof StackPane stack &&
+                    stack.getUserData() instanceof ReaderView reader) {
+                    reader.cleanup();
+                } else if (oldContent instanceof StackPane stack &&
+                           stack.getUserData() instanceof ReaderView reader) {
+                    reader.cleanup();
+                }
 
                 FadeTransition fadeOut = new FadeTransition(Duration.millis(150), oldContent);
                 fadeOut.setToValue(0);
