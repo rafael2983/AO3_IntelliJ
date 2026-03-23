@@ -459,3 +459,102 @@
 .root[class*="genre-"] .text {
     -fx-text-fill: -app-text-color !important;
 }
+
+/* === PROFILE PAGE === */
+.profile-page {
+    -fx-background-color: transparent;
+}
+
+.profile-avatar {
+    -fx-min-width: 84px;
+    -fx-min-height: 84px;
+    -fx-max-width: 84px;
+    -fx-max-height: 84px;
+    -fx-background-color: #EF233C;
+    -fx-background-radius: 999px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.10), 10, 0, 0, 3);
+}
+
+.profile-avatar-letter {
+    -fx-text-fill: white;
+    -fx-font-size: 30px;
+    -fx-font-weight: 900;
+}
+
+.profile-welcome {
+    -fx-font-size: 26px;
+    -fx-font-weight: 800;
+    -fx-text-fill: #EF233C;
+}
+
+.profile-subtext {
+    -fx-font-size: 15px;
+    -fx-text-fill: #666666;
+}
+
+.profile-card {
+    -fx-padding: 24;
+}
+
+.profile-row {
+    -fx-padding: 8 0;
+    -fx-border-color: transparent transparent #EFEFEF transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.profile-label {
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #777777;
+}
+
+.profile-value {
+    -fx-font-size: 15px;
+    -fx-text-fill: #2B2D42;
+}
+
+.profile-stat-card {
+    -fx-background-color: #FAFAFA;
+    -fx-background-radius: 14px;
+    -fx-border-color: #EAEAEA;
+    -fx-border-radius: 14px;
+    -fx-border-width: 1px;
+}
+
+.profile-stat-number {
+    -fx-font-size: 28px;
+    -fx-font-weight: 900;
+    -fx-text-fill: #EF233C;
+}
+
+.profile-stat-label {
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #666666;
+}
+
+/* === DARK MODE === */
+.root.dark-theme .profile-subtext {
+    -fx-text-fill: #BDBDBD;
+}
+
+.root.dark-theme .profile-row {
+    -fx-border-color: transparent transparent #2A2A2A transparent;
+}
+
+.root.dark-theme .profile-label {
+    -fx-text-fill: #A0A0A0;
+}
+
+.root.dark-theme .profile-value {
+    -fx-text-fill: #E0E0E0;
+}
+
+.root.dark-theme .profile-stat-card {
+    -fx-background-color: #202020;
+    -fx-border-color: #2A2A2A;
+}
+
+.root.dark-theme .profile-stat-label {
+    -fx-text-fill: #AFAFAF;
+}

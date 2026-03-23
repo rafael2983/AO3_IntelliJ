@@ -28,6 +28,7 @@ public class Main extends Application {
     private static ToggleButton themeToggleReference;
     private static boolean immersionModeEnabled = true;
     private static boolean isLoggedIn = false;
+    private static String currentUsername = null;
 
     public static boolean isImmersionModeEnabled() {
         return immersionModeEnabled;
@@ -43,6 +44,19 @@ public class Main extends Application {
 
     public static void setLoggedIn(boolean value) {
         isLoggedIn = value;
+    }
+
+    public static String getCurrentUsername() {
+        return currentUsername;
+    }
+
+    public static void setCurrentUsername(String username) {
+        currentUsername = username;
+    }
+
+    public static void logout() {
+        isLoggedIn = false;
+        currentUsername = null;
     }
 
     @Override
@@ -151,7 +165,6 @@ public class Main extends Application {
         newSidebar.getChildren().addAll(
                 createSidebarButton("My Works"),
                 createSidebarButton("Bookmarks"),
-                createSidebarButton("History"),
                 createSidebarButton("Profile")
         );
         return newSidebar;
@@ -164,14 +177,12 @@ public class Main extends Application {
 
         switch (text) {
             case "My Works" -> button.setOnAction(e -> {
+                Main.setCenterContent(new MyWorks().getView());
                 hideSidebar();
             });
 
             case "Bookmarks" -> button.setOnAction(e -> {
-                hideSidebar();
-            });
-
-            case "History" -> button.setOnAction(e -> {
+                Main.setCenterContent(new BookmarksView().getView());
                 hideSidebar();
             });
 
@@ -231,6 +242,8 @@ public class Main extends Application {
             }
             transition.play();
 
+            refreshProfileIfOpen();
+
             if (centerWrapper != null && !centerWrapper.getChildren().isEmpty()) {
                 Node currentView = centerWrapper.getChildren().get(0);
 
@@ -275,6 +288,8 @@ public class Main extends Application {
 
             immersionToggle.setText(current ? "Immersion ON" : "Immersion OFF");
 
+            refreshProfileIfOpen();
+
             if (centerWrapper != null && !centerWrapper.getChildren().isEmpty()) {
                 Node currentView = centerWrapper.getChildren().get(0);
 
@@ -296,6 +311,19 @@ public class Main extends Application {
 
     public static boolean isThemeCustomizationEnabled() {
         return themeToggleReference != null && themeToggleReference.isSelected();
+    }
+
+    public static void refreshProfileIfOpen() {
+        if (centerWrapper != null && !centerWrapper.getChildren().isEmpty()) {
+            Node currentView = centerWrapper.getChildren().get(0);
+
+            if (currentView instanceof ScrollPane scrollPane) {
+                Object userData = scrollPane.getUserData();
+                if ("profile-view".equals(userData)) {
+                    setCenterContent(new ProfileView().getView());
+                }
+            }
+        }
     }
 
     public static void setCenterContent(Node content) {

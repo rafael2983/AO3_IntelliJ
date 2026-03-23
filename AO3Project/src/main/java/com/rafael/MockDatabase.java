@@ -4,6 +4,27 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
 public class MockDatabase {
+
+    private static final String username1 = "sofia_batumbakal";
+    private static final String password1 = "Password123!";
+    private static final String username2 = "daniel_reyes";
+    private static final String password2 = "Password123!";
+
+    private static final ObservableList<Story> userWorks = FXCollections.observableArrayList();
+
+    public static void addUserWork(Story story) {
+        userWorks.add(story);
+    }
+
+    public static ObservableList<Story> getUserWorks() {
+        return userWorks;
+    }
+
+    public static boolean validateLogin(String username, String password) {
+        return (username1.equals(username) && password1.equals(password)) ||
+                (username2.equals(username) && password2.equals(password));
+    }
+
     public static ObservableList<Story> getStoriesByFandom(String fandomName) {
         ObservableList<Story> allStories = FXCollections.observableArrayList();
 
@@ -36,8 +57,71 @@ public class MockDatabase {
         // Supernatural Section
         allStories.add(new Story("The Last Train Home", "ISwearISawSlender", "Supernatural", "A scary Slender Man encounter...", "Ghosts, Haunting", "Horror", "The train station was almost empty by the time Daniel arrived. The fluorescent lights flickered softly above the platform, casting pale reflections across the polished floor. A digital sign above the tracks read 11:58 PM, counting down the minutes until the last train of the night. Daniel adjusted the strap of his bag and glanced around the quiet station. A few scattered passengers sat on benches nearby, each lost in their own world.\nWhen the train finally arrived, it slid into the station with a low mechanical hiss. The doors opened slowly, revealing rows of nearly empty seats inside. Daniel stepped aboard and sat near the window. The train lurched forward a moment later, pulling away from the station and disappearing into the dark tunnels beneath the city.\nFor the first few stops, everything felt normal. A few passengers boarded, a few stepped off. The quiet hum of the train filled the space between stations. Daniel leaned his head against the window, watching the dark blur of the tunnel pass by outside. Then the train stopped at a station Daniel had never seen before.\nThe doors slid open with their usual soft chime, but no one stepped on or off. The platform outside was strangely dim, the station name on the wall barely visible beneath layers of peeling paint. Daniel frowned and leaned forward slightly to read it.\nThe sign said Riverside.\nThat didn’t make sense. Riverside Station had been closed for years.\nDaniel glanced around the train, expecting someone else to notice. But the other passengers remained completely silent. A man in a gray coat stared blankly at the floor. A woman near the door sat perfectly still, her hands folded in her lap. None of them looked up.\nThe doors closed again.\nThe train continued moving.\nA few minutes later, the intercom crackled overhead.\n“Next stop,” the voice said. But instead of a station name, there was only static.\nDaniel shifted uneasily in his seat. Something about the car felt different now. Quieter than before. He looked around again, this time studying the other passengers more carefully. The man in the gray coat still hadn’t moved. Neither had the woman by the door.\nIn fact, Daniel realized slowly, none of them had moved at all since Riverside.\nThe train began to slow again.\nThe doors slid open at the next station.\nDaniel immediately recognized the name this time.\nOakridge.\nHis stomach tightened.\nOakridge was the station where his old neighborhood used to be—before the fire ten years ago.\nHe looked around again, his pulse beginning to race. The passengers were still sitting exactly the same way. The train doors waited open, the platform outside silent and empty. Then the woman by the door slowly turned her head. Her eyes met Daniel's. For the first time since he boarded the train, someone acknowledged him.\nShe gave him a small, patient smile.\n“You’re not supposed to be here,” she said quietly.\nDaniel stared at her. “What do you mean?”\nThe woman glanced toward the open doors and then back at him.\n“This train,” she said softly, “only stops for people who never made it home.”\nDaniel felt the blood drain from his face.\nThe train doors began to close.\n“Wait!” he shouted, jumping to his feet.\nThe woman watched him calmly as the train started moving again. Daniel ran toward the door and looked back at the platform as it slipped away into the darkness of the tunnel.\nBehind him, the passengers still hadn’t moved. And over the intercom, the static slowly returned.\n“Final stop,” the voice whispered."));
 
-        // Doctor Who Section (intentionally leave THIS blank so that Sir. Gonda can see how it looks if no one posts on a fandom
+        // Doctor Who Section (intentionally leave THIS blank so that Sir. Gonda can see how it looks if no one posts on a fandom)
 
         return allStories.filtered(s -> s.getFandom().equalsIgnoreCase(fandomName));
     }
+
+    private static final ObservableList<Story> bookmarkedStories = FXCollections.observableArrayList();
+
+    public static boolean isBookmarked(Story story) {
+        return bookmarkedStories.stream().anyMatch(s ->
+                s.getTitle().equals(story.getTitle()) &&
+                        s.getAuthor().equals(story.getAuthor())
+        );
+    }
+
+    public static void addBookmark(Story story) {
+        if (!isBookmarked(story)) {
+            bookmarkedStories.add(story);
+        }
+    }
+
+    public static void removeBookmark(Story story) {
+        bookmarkedStories.removeIf(s ->
+                s.getTitle().equals(story.getTitle()) &&
+                        s.getAuthor().equals(story.getAuthor())
+        );
+    }
+
+    public static void toggleBookmark(Story story) {
+        if (isBookmarked(story)) {
+            removeBookmark(story);
+        } else {
+            addBookmark(story);
+        }
+    }
+
+    public static int getBookmarkCount() {
+        return bookmarkedStories.size();
+    }
+
+    public static int getWorksCount() {
+        // if you don’t have user-specific works yet, return total stories
+        return getAllStories().size();
+    }
+
+    public static int getFandomCount() {
+        return (int) getAllStories().stream()
+                .map(Story::getFandom)
+                .distinct()
+                .count();
+    }
+
+    public static ObservableList<Story> getBookmarkedStories() {
+        return bookmarkedStories;
+    }
+
+    public static ObservableList<Story> getAllStories() {
+        ObservableList<Story> all = FXCollections.observableArrayList();
+
+        all.addAll(getStoriesByFandom("Kpop"));
+        all.addAll(getStoriesByFandom("Anime"));
+        all.addAll(getStoriesByFandom("Movies"));
+        all.addAll(userWorks);
+
+        return all;
+    }
+
+
 }

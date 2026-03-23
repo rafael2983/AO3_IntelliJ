@@ -1,6 +1,8 @@
 package com.rafael;
 
 import javafx.animation.*;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -22,6 +24,7 @@ public class ReaderView {
     private Story currentStory;
     private Pane effectsLayer;
     private StackPane rootStack;
+    private final IntegerProperty fontSize = new SimpleIntegerProperty(16);
 
     public Story getCurrentStory() {
         return currentStory;
@@ -29,31 +32,85 @@ public class ReaderView {
 
     public ScrollPane getView(Story story, BorderPane root) {
         this.currentStory = story;
+
         if (Main.isImmersionModeEnabled()) {
             applyGenreTheme(root, story.getGenre());
         } else {
             root.getStyleClass().removeIf(s -> s.startsWith("genre-"));
         }
 
-
         rootStack = new StackPane();
         rootStack.setUserData(this);
-        effectsLayer = new Pane(); // Now assigned to the class field
+
+        effectsLayer = new Pane();
         effectsLayer.prefWidthProperty().bind(rootStack.widthProperty());
         effectsLayer.prefHeightProperty().bind(rootStack.heightProperty());
-
-
         effectsLayer.setMouseTransparent(true);
 
-        // Trigger ONLY if immersion is ON
         if (Main.isImmersionModeEnabled()) {
             addBackgroundEffects(effectsLayer, story.getGenre());
         }
 
         VBox readerContainer = new VBox(20);
-        rootStack.setUserData(this);
         readerContainer.setPadding(new Insets(40));
         readerContainer.setAlignment(Pos.TOP_CENTER);
+
+        /* ================= TOP ACTION BAR ================= */
+        HBox topBar = new HBox(12);
+        topBar.setMaxWidth(850);
+        topBar.setAlignment(Pos.CENTER_LEFT);
+
+        Button backBtn = new Button("Back");
+        backBtn.getStyleClass().add("filter-button");
+        backBtn.setOnAction(e -> Main.setCenterContent(new HomeView().getView()));
+
+        Button bookmarkBtn = new Button();
+        bookmarkBtn.getStyleClass().add("button");
+        updateBookmarkButton(bookmarkBtn, story);
+        bookmarkBtn.setOnAction(e -> {
+            if (!Main.isLoggedIn()) {
+                Main.setCenterContent(new LoginView().getView());
+                return;
+            }
+            MockDatabase.toggleBookmark(story);
+            updateBookmarkButton(bookmarkBtn, story);
+        });
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        Label fontLabel = new Label("Font Size");
+        fontLabel.getStyleClass().add("card-desc");
+
+        Button decreaseFontBtn = new Button("A-");
+        decreaseFontBtn.getStyleClass().add("filter-button");
+        decreaseFontBtn.setOnAction(e -> {
+            if (fontSize.get() > 12) {
+                fontSize.set(fontSize.get() - 2);
+            }
+        });
+
+        Button resetFontBtn = new Button("Reset");
+        resetFontBtn.getStyleClass().add("filter-button");
+        resetFontBtn.setOnAction(e -> fontSize.set(16));
+
+        Button increaseFontBtn = new Button("A+");
+        increaseFontBtn.getStyleClass().add("filter-button");
+        increaseFontBtn.setOnAction(e -> {
+            if (fontSize.get() < 28) {
+                fontSize.set(fontSize.get() + 2);
+            }
+        });
+
+        topBar.getChildren().addAll(
+                backBtn,
+                bookmarkBtn,
+                spacer,
+                fontLabel,
+                decreaseFontBtn,
+                resetFontBtn,
+                increaseFontBtn
+        );
 
         // Wrap text in a card for better readability like a page
         VBox textCard = new VBox(20);
@@ -62,6 +119,8 @@ public class ReaderView {
         textCard.setAlignment(Pos.TOP_CENTER);
 
         Label title = new Label(story.getTitle());
+        title.getStyleClass().add("section-title");
+
         VBox textContainer = new VBox(20);
         textContainer.setMaxWidth(750);
         textContainer.setAlignment(Pos.TOP_LEFT);
@@ -71,19 +130,19 @@ public class ReaderView {
         // Split into paragraphs
         String[] paragraphs = fullText.split("(?<=\\.)\\s+");
 
-
         for (String p : paragraphs) {
-
             TextFlow flow = new TextFlow();
             flow.setMaxWidth(750);
+            flow.setLineSpacing(4);
 
             String[] words = p.split(" ");
 
             for (String word : words) {
                 Text t = new Text(word + " ");
                 t.setUnderline(false);
+                updateStoryTextStyle(t);
 
-                t.setStyle("-fx-fill: -app-text-color; -fx-font-size: 16px;");
+                fontSize.addListener((obs, oldVal, newVal) -> updateStoryTextStyle(t));
 
                 // KEY WORD DETECTION
                 String w = normalize(word);
@@ -137,21 +196,20 @@ public class ReaderView {
                     }
                 }
                 // SCI-FI
-                    else if (genre.contains("sci")) {
+                else if (genre.contains("sci")) {
 
-                        if (w.contains("signal") || w.contains("code") || w.contains("data") ||
-                                w.contains("blade") || w.contains("light") || w.contains("glow") ||
-                                w.contains("force") || w.contains("power") ||
-                                w.contains("wind") || w.contains("sand") || w.contains("dust") ||
-                                w.contains("dark") || w.contains("shadow")) {
+                    if (w.contains("signal") || w.contains("code") || w.contains("data") ||
+                            w.contains("blade") || w.contains("light") || w.contains("glow") ||
+                            w.contains("force") || w.contains("power") ||
+                            w.contains("wind") || w.contains("sand") || w.contains("dust") ||
+                            w.contains("dark") || w.contains("shadow")) {
 
-                            isKeyWord = true;
-                            color = "#38B2AC"; // neon teal
-                        }
+                        isKeyWord = true;
+                        color = "#38B2AC"; // neon teal
                     }
+                }
 
-
-                    // ACTION
+                // ACTION
                 else if (genre.contains("action")) {
                     if (w.contains("run") || w.contains("hit") ||
                             w.contains("crash") || w.contains("fight") ||
@@ -168,14 +226,18 @@ public class ReaderView {
 
                     final String finalColor = color;
 
-                    t.setStyle("-fx-fill: " + finalColor + "; -fx-font-weight: bold;");
+                    t.setStyle("-fx-fill: " + finalColor + "; -fx-font-weight: bold; -fx-font-size: " + fontSize.get() + "px;");
+
+                    fontSize.addListener((obs, oldVal, newVal) ->
+                            t.setStyle("-fx-fill: " + finalColor + "; -fx-font-weight: bold; -fx-font-size: " + newVal.intValue() + "px;")
+                    );
 
                     t.setOnMouseEntered(e -> {
-                        t.setStyle("-fx-fill: white; -fx-font-weight: bold;");
+                        t.setStyle("-fx-fill: white; -fx-font-weight: bold; -fx-font-size: " + fontSize.get() + "px;");
                     });
 
                     t.setOnMouseExited(e -> {
-                        t.setStyle("-fx-fill: " + finalColor + "; -fx-font-weight: bold;");
+                        t.setStyle("-fx-fill: " + finalColor + "; -fx-font-weight: bold; -fx-font-size: " + fontSize.get() + "px;");
                     });
 
                     t.setOnMouseClicked(e -> {
@@ -198,63 +260,49 @@ public class ReaderView {
                             triggerNightEffect();
                         }
 
-                        // 👁HORROR-SPECIFIC EFFECTS
-
+                        // HORROR-SPECIFIC EFFECTS
                         else if (w.contains("shadow") || w.contains("figure")) {
-                            triggerShadowFigure(); // dark presence
+                            triggerShadowFigure();
                         }
                         else if (w.contains("mirror") || w.contains("reflection")) {
-                            triggerMirrorDistortion(); // NEW
+                            triggerMirrorDistortion();
                         }
                         else if (w.contains("voice") || w.contains("voices") || w.contains("breath")) {
-                            triggerWhisperEffect(); // glitch flicker
+                            triggerWhisperEffect();
                         }
                         else if (w.contains("creak") || w.contains("creaked") || w.contains("appeared") ||  w.contains("moved") || w.contains("footsteps")) {
-                            triggerFootstepEffect(); // NEW
+                            triggerFootstepEffect();
                         }
                         else if (w.contains("staring") || w.contains("watching")) {
-                            triggerWatcherEffect(); // NEW
+                            triggerWatcherEffect();
                         }
                         else if (w.contains("blood") || w.contains("red")) {
                             triggerBloodFlash();
                         }
 
-                        //  SCI-FI EFFECTS
+                        // SCI-FI EFFECTS
                         else if (genre.contains("sci")) {
-
-
                             if (w.contains("signal") || w.contains("code") || w.contains("data")) {
                                 triggerDataStreamEffect();
                             }
-
-
                             else if (w.contains("light") || w.contains("glow") || w.contains("blade")) {
                                 triggerEnergyPulseEffect();
                             }
-
-
                             else if (w.contains("wind") || w.contains("sand") || w.contains("dust")) {
                                 triggerFloatingCloudsEffect();
                             }
-
-
                             else if (w.contains("force") || w.contains("power")) {
                                 triggerForceWaveEffect();
                             }
-
-
                             else if (w.contains("dark") || w.contains("shadow")) {
                                 triggerVoidGlitchEffect();
                             }
-
-
                             else {
                                 triggerSciFiClickEffect();
                             }
                         }
 
-
-                        //  FALLBACK (GENRE)
+                        // FALLBACK (GENRE)
                         else {
                             if (genre.contains("romance")) {
                                 triggerRomanceEffect();
@@ -281,10 +329,8 @@ public class ReaderView {
             textContainer.getChildren().add(flow);
         }
 
-        title.getStyleClass().add("section-title");
-
         textCard.getChildren().addAll(title, textContainer);
-        readerContainer.getChildren().add(textCard);
+        readerContainer.getChildren().addAll(topBar, textCard);
 
         rootStack.getChildren().addAll(effectsLayer, readerContainer);
 
@@ -302,14 +348,12 @@ public class ReaderView {
 
                 if (height > viewportHeight) {
                     double scrollRange = height - viewportHeight;
-                    // Cap the maximum delta to prevent huge jumps from fast trackpad flings
                     double clampedDelta = Math.max(-40, Math.min(40, delta));
-                    // Reduce the multiplier for a smoother feel
                     double scrollOffset = -clampedDelta * 1.5;
 
                     double newVValue = scrollPane.getVvalue() + (scrollOffset / scrollRange);
                     scrollPane.setVvalue(Math.max(0, Math.min(1, newVValue)));
-                    event.consume(); // Consume event to override default behavior
+                    event.consume();
                 }
             }
         });
@@ -317,14 +361,25 @@ public class ReaderView {
         return scrollPane;
     }
 
+    private void updateBookmarkButton(Button button, Story story) {
+        if (!Main.isLoggedIn()) {
+            button.setText("Sign in to Bookmark");
+        } else if (MockDatabase.isBookmarked(story)) {
+            button.setText("Remove Bookmark");
+        } else {
+            button.setText("Bookmark");
+        }
+    }
+
+    private void updateStoryTextStyle(Text t) {
+        String textColor = Main.isThemeCustomizationEnabled() ? "#E0E0E0" : "#1A1A1A";
+        t.setStyle("-fx-fill: " + textColor + "; -fx-font-size: " + fontSize.get() + "px;");
+    }
+
     private String normalize(String word) {
-
         word = word.toLowerCase();
-
-        // remove punctuation
         word = word.replaceAll("[^a-z]", "");
 
-        // basic stemming
         if (word.endsWith("ing") && word.length() > 4) {
             word = word.substring(0, word.length() - 3);
         }
@@ -337,8 +392,6 @@ public class ReaderView {
 
         return word;
     }
-
-
 
     private void addBackgroundEffects(Pane layer, String genre) {
         layer.getChildren().clear();
@@ -369,24 +422,19 @@ public class ReaderView {
     }
 
     private void applyHorrorEffects(Pane layer) {
-        // --- TUNING AREA ---
-        double fogOpacity = 0.3;     // How visible the fog is (0.0 to 1.0)
-        double flickerBase = 0.05;   // Base darkness of flicker
-        double flickerPulse = 0.15;  // How intense the flicker surge is
-        int fogDriftSpeed1 = 20;     // Seconds for first fog layer (lower = faster)
-        int fogDriftSpeed2 = 30;     // Seconds for second fog layer
-        // -------------------
+        double fogOpacity = 0.3;
+        double flickerBase = 0.05;
+        double flickerPulse = 0.15;
+        int fogDriftSpeed1 = 20;
+        int fogDriftSpeed2 = 30;
 
-        // 1. Create two layered fog elements
         Rectangle fog1 = createFogRectangle(fogOpacity);
         Rectangle fog2 = createFogRectangle(fogOpacity);
         layer.getChildren().addAll(fog1, fog2);
 
-        // 2. Animate movement (using your new speed variables)
         animateFog(fog1, fogDriftSpeed1, 0);
         animateFog(fog2, fogDriftSpeed2, 100);
 
-        // 3. Pulse (Density drifting)
         Timeline pulse = new Timeline(
                 new KeyFrame(Duration.ZERO, new KeyValue(fog1.opacityProperty(), fogOpacity * 0.5)),
                 new KeyFrame(Duration.seconds(4), new KeyValue(fog1.opacityProperty(), fogOpacity)),
@@ -395,7 +443,6 @@ public class ReaderView {
         pulse.setCycleCount(Animation.INDEFINITE);
         pulse.play();
 
-        // 4. Flicker Overlay
         Rectangle flicker = new Rectangle(1280, 800, Color.BLACK);
         flicker.setOpacity(flickerBase);
         layer.getChildren().add(flicker);
@@ -420,7 +467,6 @@ public class ReaderView {
 
             heart.setLayoutX(Math.random() * width);
             heart.setLayoutY(Math.random() * height);
-
 
             effectsLayer.getChildren().add(heart);
 
@@ -452,7 +498,6 @@ public class ReaderView {
         pulse.setCycleCount(2);
         pulse.play();
 
-        // FLASH OVERLAY
         Rectangle flash = new Rectangle();
         flash.setFill(Color.web("#ff4d6d"));
         flash.widthProperty().bind(effectsLayer.widthProperty());
@@ -471,7 +516,6 @@ public class ReaderView {
         seq.setOnFinished(e -> effectsLayer.getChildren().remove(flash));
         seq.play();
     }
-
 
     private void triggerFadeEffect() {
         if (!Main.isImmersionModeEnabled()) return;
@@ -503,24 +547,19 @@ public class ReaderView {
         double height = effectsLayer.getHeight() > 0 ? effectsLayer.getHeight() : 800;
 
         for (int i = 0; i < 15; i++) {
-
             Circle light = new Circle(40 + Math.random() * 80);
-            light.setFill(Color.web("#ffb3c6", 0.15)); // soft pink glow
+            light.setFill(Color.web("#ffb3c6", 0.15));
 
             light.setLayoutX(Math.random() * width);
             light.setLayoutY(Math.random() * height);
-
-            // blur it for softness
             light.setEffect(new javafx.scene.effect.GaussianBlur(30));
 
             effectsLayer.getChildren().add(light);
 
-            // slow float
             TranslateTransition drift = new TranslateTransition(Duration.seconds(4 + Math.random() * 3), light);
             drift.setByY(-50 + Math.random() * 100);
             drift.setByX(-30 + Math.random() * 60);
 
-            // fade out slowly
             FadeTransition fade = new FadeTransition(Duration.seconds(4), light);
             fade.setToValue(0);
 
@@ -530,14 +569,11 @@ public class ReaderView {
         }
     }
 
-
     private void triggerNightEffect() {
         if (!Main.isImmersionModeEnabled()) return;
 
-        // DARK AMBIENT OVERLAY
         Rectangle night = new Rectangle();
-        night.setFill(Color.web("#0b0f1a")); // deep blue-black
-
+        night.setFill(Color.web("#0b0f1a"));
         night.widthProperty().bind(effectsLayer.widthProperty());
         night.heightProperty().bind(effectsLayer.heightProperty());
 
@@ -550,9 +586,8 @@ public class ReaderView {
         FadeTransition fadeOut = new FadeTransition(Duration.seconds(2), night);
         fadeOut.setToValue(0);
 
-        // FLOATING LIGHT PARTICLES
         for (int i = 0; i < 20; i++) {
-            Circle star = new Circle(2, Color.web("#ffc2d1")); // soft pink glow
+            Circle star = new Circle(2, Color.web("#ffc2d1"));
             star.setOpacity(0.6);
 
             double width = effectsLayer.getWidth() > 0 ? effectsLayer.getWidth() : 1200;
@@ -560,7 +595,6 @@ public class ReaderView {
 
             star.setLayoutX(Math.random() * width);
             star.setLayoutY(Math.random() * height);
-
 
             effectsLayer.getChildren().add(star);
 
@@ -579,8 +613,6 @@ public class ReaderView {
         seq.setOnFinished(e -> effectsLayer.getChildren().remove(night));
         seq.play();
     }
-
-
 
     private void triggerSoftLoveEffect() {
         if (!Main.isImmersionModeEnabled()) return;
@@ -680,7 +712,6 @@ public class ReaderView {
         fade.play();
     }
 
-
     private void triggerBloodFlash() {
         if (!Main.isImmersionModeEnabled()) return;
 
@@ -711,10 +742,8 @@ public class ReaderView {
         double height = effectsLayer.getHeight() > 0 ? effectsLayer.getHeight() : 800;
 
         for (int i = 0; i < 12; i++) {
-
             Circle cloud = new Circle(80 + Math.random() * 120);
-            cloud.setFill(Color.web("#38B2AC", 0.08)); // soft teal fog
-
+            cloud.setFill(Color.web("#38B2AC", 0.08));
             cloud.setEffect(new javafx.scene.effect.GaussianBlur(60));
 
             cloud.setLayoutX(Math.random() * width);
@@ -764,7 +793,6 @@ public class ReaderView {
         double width = effectsLayer.getWidth() > 0 ? effectsLayer.getWidth() : 1200;
 
         for (int i = 0; i < 15; i++) {
-
             Rectangle line = new Rectangle(2, 40, Color.web("#38B2AC"));
             line.setOpacity(0.3);
 
@@ -830,14 +858,13 @@ public class ReaderView {
         flicker.play();
     }
 
-
-    // Update helper to accept opacity
     private Rectangle createFogRectangle(double opacity) {
         Rectangle rect = new Rectangle(0, 0, 1600, 800);
         rect.setFill(Color.web("#808080", opacity));
         rect.setEffect(new javafx.scene.effect.GaussianBlur(100));
         return rect;
     }
+
     private void animateFog(Rectangle rect, int durationSeconds, double yOffset) {
         TranslateTransition tt = new TranslateTransition(Duration.seconds(durationSeconds), rect);
         tt.setFromX(-400);
@@ -849,24 +876,30 @@ public class ReaderView {
 
     private void applyFantasyEffects(Pane layer) {
         for (int i = 0; i < 20; i++) {
-            Circle p = new Circle(3, Color.web("#D6BCFA")); // Soft purple/gold
-            p.setOpacity(0.2); p.setLayoutX(Math.random() * 1000); p.setLayoutY(Math.random() * 800);
+            Circle p = new Circle(3, Color.web("#D6BCFA"));
+            p.setOpacity(0.2);
+            p.setLayoutX(Math.random() * 1000);
+            p.setLayoutY(Math.random() * 800);
             layer.getChildren().add(p);
+
             FadeTransition ft = new FadeTransition(Duration.seconds(3), p);
-            ft.setFromValue(0.1); ft.setToValue(0.5); ft.setCycleCount(Animation.INDEFINITE); ft.setAutoReverse(true); ft.play();
+            ft.setFromValue(0.1);
+            ft.setToValue(0.5);
+            ft.setCycleCount(Animation.INDEFINITE);
+            ft.setAutoReverse(true);
+            ft.play();
         }
     }
 
     private void applySciFiEffects(Pane layer) {
-        // TWEAK THESE TWO VARIABLES
-        double particleSize = 9.0;   // Size of the dots
-        double scanlineWidth = 5.0;  // Thickness of the scanning lines
+        double particleSize = 9.0;
+        double scanlineWidth = 5.0;
 
-        // 1. Horizontal Particles (Circles)
         for (int i = 0; i < 40; i++) {
             double randomRadius = 0.5 + (Math.random() * particleSize);
             Circle dataPoint = new Circle(randomRadius, Color.web("#38B2AC"));
             dataPoint.setOpacity(0.15);
+
             double width = effectsLayer.getWidth() > 0 ? effectsLayer.getWidth() : 1200;
             double height = effectsLayer.getHeight() > 0 ? effectsLayer.getHeight() : 800;
 
@@ -882,7 +915,6 @@ public class ReaderView {
             drift.play();
         }
 
-        // 2. Vertical Scanning Bars (Rectangles)
         for (int i = 0; i < 5; i++) {
             Rectangle scanBar = new Rectangle(scanlineWidth, 400, Color.web("#38B2AC"));
             scanBar.setOpacity(0.05);
@@ -906,32 +938,23 @@ public class ReaderView {
     }
 
     public void applyGenreTheme(BorderPane root, String genre) {
-
-        // remove old genre classes ALWAYS
         root.getStyleClass().removeIf(style -> style.startsWith("genre-"));
 
-        //  if immersion OFF → DO NOTHING
         if (!Main.isImmersionModeEnabled()) {
             return;
         }
 
-        // apply genre regardless of dark mode
         String cleanGenre = genre.toLowerCase().replaceAll("[^a-z]", "");
         root.getStyleClass().add("genre-" + cleanGenre);
     }
 
     public void refreshEffects(String genre) {
-
-        // ALWAYS CLEAR EVERYTHING
         effectsLayer.getChildren().clear();
 
-        // STOP if immersion OFF
         if (!Main.isImmersionModeEnabled()) return;
 
-        // re-add if ON
         addBackgroundEffects(effectsLayer, genre);
     }
-
 
     private void triggerHorrorClickEffect() {
         if (!Main.isImmersionModeEnabled()) return;
@@ -955,7 +978,6 @@ public class ReaderView {
         seq.setOnFinished(e -> effectsLayer.getChildren().remove(dark));
         seq.play();
 
-        // subtle shake
         TranslateTransition shake = new TranslateTransition(Duration.millis(50), rootStack);
         shake.setByX(6);
         shake.setCycleCount(6);
@@ -1041,6 +1063,7 @@ public class ReaderView {
         shake.play();
     }
 
-
-    public String getCurrentStoryGenre() { return (currentStory != null) ? currentStory.getGenre() : ""; }
+    public String getCurrentStoryGenre() {
+        return (currentStory != null) ? currentStory.getGenre() : "";
+    }
 }

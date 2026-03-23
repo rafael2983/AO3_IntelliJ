@@ -1,5 +1,10 @@
 com\rafael\StoryPageService.class
+com\rafael\LoginView.class
+com\rafael\BookmarksView.class
 com\rafael\MockDatabase.class
 com\rafael\Story.class
 com\rafael\ReaderView.class
+com\rafael\MyWorks.class
+com\rafael\CreateWorkView.class
 com\rafael\FandomPage.class
+com\rafael\ProfileView.class
